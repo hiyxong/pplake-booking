@@ -41,7 +41,7 @@
     <!-- ปุ่มกดยืนยัน -->
     <button id="btn-submit" disabled 
       class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm">
-      ยืนยันวันที่ & โอนมัดจำ
+      ยืนยันวันที่ & ขอเลขบัญชี
     </button>
   </div>
 
@@ -75,7 +75,6 @@
             if (currentStart) {
               const parseYMD = (s) => `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
               if (currentEnd) {
-                // iCal DTEND มักเป็น Exclusive (วันเช็คเอาท์) จึงล็อคถึงวันก่อนหน้าเช็คเอาท์
                 let curr = new Date(parseYMD(currentStart));
                 const stop = new Date(parseYMD(currentEnd));
                 while (curr < stop) {
@@ -97,10 +96,10 @@
     }
 
     async function initApp() {
-      // 1. ดึงวันติดจองจาก Google Calendar
+      // 1. ดึงวันติดจองจาก Google Calendar ของลูกพี่
       const bookedDates = await fetchBookedDates();
 
-      // 2. เคลียร์ข้อความกำลังโหลด แล้ววาดปฏิทิน
+      // 2. เคลียร์ข้อความกำลังโหลด แล้วสร้างปฏิทิน
       document.getElementById('calendar-inline').innerHTML = '';
       fpInstance = flatpickr("#calendar-inline", {
         inline: true,
@@ -121,10 +120,10 @@
         }
       });
 
-      // 3. เริ่มทำงาน LIFF
+      // 3. เริ่มเชื่อมต่อ LIFF
       liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-      // 4. ปุ่มกดยืนยัน
+      // 4. ปุ่มกดยืนยัน ส่งข้อความเข้า LINE
       document.getElementById('btn-submit').addEventListener('click', async () => {
         if (!chosenDates) return;
 
