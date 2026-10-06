@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เช็กวันว่าง & จองที่พัก - PP Lake Pool Villa</title>
+  <!-- Tailwind CSS & Flatpickr ปฏิทิน -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+  <!-- LINE LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    .flatpickr-calendar { margin: 0 auto; box-shadow: none; border: 1px solid #e2e8f0; border-radius: 1rem; }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: #0284c7 !important; border-color: #0284c7 !important; }
+    .flatpickr-day.inRange { background: #e0f2fe !important; box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center justify-center font-sans">
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-5 border border-slate-200">
+    <div class="text-center mb-4">
+      <h1 class="text-lg font-bold text-slate-800 tracking-wide">PP LAKE POOL VILLA</h1>
+      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน - เช็คเอาท์</p>
+    </div>
+
+    <!-- กล่องแสดงปฏิทิน -->
+    <div id="calendar-inline" class="flex justify-center mb-4"></div>
+
+    <!-- สรุปวันที่เลือก -->
+    <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
+      <div class="flex justify-between items-center">
+        <span class="font-medium">วันที่เลือก:</span>
+        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ต้องการพัก</span>
+      </div>
+      <p class="mt-1 text-[11px] text-slate-400">*เช็คอิน 14:00 น. / เช็คเอาท์ 11:00 น.</p>
+    </div>
+
+    <!-- ปุ่มกดยืนยัน -->
+    <button id="btn-submit" disabled 
+      class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm">
+      ยืนยันวันที่ & โอนมัดจำ
+    </button>
+  </div>
+
+  <script>
+    // 1. ใส่ LIFF ID ที่ได้จาก LINE Developers ที่นี่
+    const MY_LIFF_ID = "YOUR_LIFF_ID_HERE";
+    let chosenDates = "";
+
+    // ตัวอย่างวันที่ติดจองชั่วคราว (เดี๋ยวเราจะเอาข้อมูลจาก Agoda/Booking มาใส่แทนตรงนี้)
+    const bookedDates = [
+      "2026-10-15", "2026-10-16", "2026-10-25"
+    ];
+
+    async function initApp() {
+      // เรียกใช้ Flatpickr แสดงปฏิทิน
+      flatpickr("#calendar-inline", {
+        inline: true,
+        mode: "range",
+        minDate: "today",
+        locale: "th",
+        disable: bookedDates,
+        onChange: function(selectedDates, dateStr) {
+          if (selectedDates.length === 2) {
+            const start = selectedDates[0].toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            const end = selectedDates[1].toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            chosenDates = `${start} - ${end}`;
+            document.getElementById('selected-dates').innerText = chosenDates;
+            document.getElementById('btn-submit').disabled = false;
+          } else {
+            document.getElementById('btn-submit').disabled = true;
+          }
+        }
+      });
+
+      // เชื่อมต่อ LIFF
+      try {
+        await liff.init({ liffId: MY_LIFF_ID });
+      } catch (err) {
+        console.error("LIFF Init Error:", err);
+      }
+
+      // เมื่อลูกค้ากดปุ่มยืนยัน
+      document.getElementById('btn-submit').addEventListener('click', async () => {
+        if (!chosenDates) return;
+        
+        const textMsg = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}\n(ขอเลขบัญชีโอนมัดจำ)`;
+
+        if (liff.isLoggedIn() && liff.isInClient()) {
+          try {
+            await liff.sendMessages([{
+              type: 'text',
+              text: textMsg
+            }]);
+            liff.closeWindow(); // ปิดหน้าต่างกลับไปที่แชท
+          } catch (e) {
+            alert("ส่งข้อความไม่สำเร็จ: " + e.message);
+          }
+        } else {
+          alert("กรุณาเปิดลิงก์นี้ผ่าน LINE: " + textMsg);
+        }
+      });
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
