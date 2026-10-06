@@ -27,13 +27,25 @@
     <!-- กล่องแสดงปฏิทิน -->
     <div id="calendar-inline" class="flex justify-center mb-4"></div>
 
+    <!-- เลือกจำนวนผู้เข้าพัก -->
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-slate-700 mb-1">👥 จำนวนผู้เข้าพัก:</label>
+      <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+        <option value="1 - 4 ท่าน">1 - 4 ท่าน</option>
+        <option value="5 - 8 ท่าน" selected>5 - 8 ท่าน</option>
+        <option value="9 - 10 ท่าน">9 - 10 ท่าน</option>
+        <option value="11 - 12 ท่าน">11 - 12 ท่าน</option>
+        <option value="มากกว่า 12 ท่าน (เสริมที่นอน)">มากกว่า 12 ท่าน (เสริมที่นอน)</option>
+      </select>
+    </div>
+
     <!-- สรุปวันที่เลือก -->
     <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
-      <div class="flex justify-between items-center">
+      <div class="flex justify-between items-center mb-1">
         <span class="font-medium">วันที่เลือก:</span>
         <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ต้องการพัก</span>
       </div>
-      <p class="mt-1 text-[11px] text-slate-400">*เช็คอิน 14:00 น. / เช็คเอาท์ 11:00 น.</p>
+      <p class="text-[11px] text-slate-400">*เช็คอิน 14:00 น. / เช็คเอาท์ 11:00 น.</p>
     </div>
 
     <!-- ปุ่มกดยืนยัน -->
@@ -47,13 +59,13 @@
     const MY_LIFF_ID = "2011900022-TMj4fk64";
     let chosenDates = "";
 
-    // 1. เรนเดอร์ปฏิทินขึ้นมาทันที ไม่ติดบล็อกวันที่ทดสอบ 15,16 แล้ว
+    // เรนเดอร์ปฏิทิน
     flatpickr("#calendar-inline", {
       inline: true,
       mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
-      disable: [], // ว่างไว้ก่อน รอซิงก์จริง
+      disable: [],
       onChange: function(selectedDates) {
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
@@ -67,14 +79,15 @@
       }
     });
 
-    // 2. เชื่อมต่อ LIFF
+    // เริ่มเชื่อมต่อ LIFF
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-    // 3. ปุ่มกดส่งข้อความ
+    // ปุ่มกดส่งข้อความเข้าห้องแชท
     document.getElementById('btn-submit').addEventListener('click', async () => {
       if (!chosenDates) return;
+      const guests = document.getElementById('guest-count').value;
 
-      const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}`;
+      const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}\n👥 ผู้เข้าพัก: ${guests}`;
       const msg2 = `ขอเลขบัญชีโอนมัดจำ`;
 
       if (liff.isLoggedIn() && liff.isInClient()) {
