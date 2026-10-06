@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
@@ -40,28 +39,63 @@
     <!-- ปุ่มกดยืนยัน -->
     <button id="btn-submit" disabled 
       class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm">
-      ยืนยันวันที่ & โอนมัดจำ
+      ยืนยันวันที่ & ขอเลขบัญชี
     </button>
   </div>
 
   <script>
-    // 1. ใส่ LIFF ID ที่ได้จาก LINE Developers ที่นี่
     const MY_LIFF_ID = "2011900022-TMj4fk64";
     let chosenDates = "";
 
-    // ตัวอย่างวันที่ติดจองชั่วคราว
+    // วันที่ติดจองชั่วคราว
     const bookedDates = [
       "2026-10-15", "2026-10-16", "2026-10-25"
     ];
 
-    async function initApp() {
-      // เรียกใช้ Flatpickr แสดงปฏิทิน
-      flatpickr("#calendar-inline", {
-        inline: true,
-        mode: "range",
-        minDate: "today",
-        locale: "th",
-        disable: bookedDates,
-        onChange: function(selectedDates, dateStr) {
-          if (selectedDates.length === 2) {
-            const start = selectedDates[0].toLocaleDateString('th-
+    // โหลดปฏิทินขึ้นมาแสดงทันที
+    flatpickr("#calendar-inline", {
+      inline: true,
+      mode: "range",
+      minDate: "today",
+      dateFormat: "Y-m-d",
+      disable: bookedDates,
+      onChange: function(selectedDates, dateStr) {
+        if (selectedDates.length === 2) {
+          const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
+          const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
+          chosenDates = d1 + " - " + d2;
+          document.getElementById('selected-dates').innerText = chosenDates;
+          document.getElementById('btn-submit').disabled = false;
+        } else {
+          document.getElementById('btn-submit').disabled = true;
+        }
+      }
+    });
+
+    // เริ่มการเชื่อมต่อ LIFF
+    liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
+
+    // ปุ่มกดยืนยัน
+    document.getElementById('btn-submit').addEventListener('click', async () => {
+      if (!chosenDates) return;
+
+      const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}`;
+      const msg2 = `ขอเลขบัญชีโอนมัดจำ`;
+
+      if (liff.isLoggedIn() && liff.isInClient()) {
+        try {
+          await liff.sendMessages([
+            { type: 'text', text: msg1 },
+            { type: 'text', text: msg2 }
+          ]);
+          liff.closeWindow();
+        } catch (e) {
+          alert("ไม่สามารถส่งข้อความได้: " + e.message);
+        }
+      } else {
+        alert("กรุณาเปิดลิงก์นี้ผ่าน LINE เท่านั้นครับ");
+      }
+    });
+  </script>
+</body>
+</html>
