@@ -25,9 +25,7 @@
     </div>
 
     <!-- กล่องแสดงปฏิทิน -->
-    <div id="calendar-inline" class="flex justify-center mb-4 min-h-[300px] items-center text-slate-400 text-xs">
-      กำลังโหลดปฏิทินวันว่าง...
-    </div>
+    <div id="calendar-inline" class="flex justify-center mb-4"></div>
 
     <!-- สรุปวันที่เลือก -->
     <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
@@ -50,15 +48,34 @@
     const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
 
     let chosenDates = "";
-    let fpInstance = null;
 
-    // ฟังก์ชันดึงวันติดจองจาก Google Calendar
-    async function fetchBookedDates() {
-      const booked = [];
+    // 1. วาดปฏิทินขึ้นมาทันที ลื่นๆ ไม่ต้องรอโหลด
+    const fp = flatpickr("#calendar-inline", {
+      inline: true,
+      mode: "range",
+      minDate: "today",
+      dateFormat: "Y-m-d",
+      disable: [], // เริ่มต้นไม่มีวันล็อคปลอม 15,16 แล้ว
+      onChange: function(selectedDates) {
+        if (selectedDates.length === 2) {
+          const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
+          const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
+          chosenDates = d1 + " - " + d2;
+          document.getElementById('selected-dates').innerText = chosenDates;
+          document.getElementById('btn-submit').disabled = false;
+        } else {
+          document.getElementById('btn-submit').disabled = true;
+        }
+      }
+    });
+
+    // 2. ดึงวันติดจองจาก Google Calendar ในพื้นหลัง
+    async function syncCalendar() {
       try {
-        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
+        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(ICAL_URL);
         const res = await fetch(proxyUrl);
         const icsData = await res.text();
+        const booked = [];
 
         const lines = icsData.split(/\r?\n/);
         let currentStart = null;
@@ -89,64 +106,41 @@
             currentEnd = null;
           }
         }
+
+        if (booked.length > 0) {
+          fp.set('disable', booked);
+        }
       } catch (err) {
-        console.error("Error fetching iCal:", err);
+        console.log("Sync error:", err);
       }
-      return booked;
     }
 
-    async function initApp() {
-      // 1. ดึงวันติดจองจาก Google Calendar ของลูกพี่
-      const bookedDates = await fetchBookedDates();
+    syncCalendar();
 
-      // 2. เคลียร์ข้อความกำลังโหลด แล้วสร้างปฏิทิน
-      document.getElementById('calendar-inline').innerHTML = '';
-      fpInstance = flatpickr("#calendar-inline", {
-        inline: true,
-        mode: "range",
-        minDate: "today",
-        dateFormat: "Y-m-d",
-        disable: bookedDates,
-        onChange: function(selectedDates) {
-          if (selectedDates.length === 2) {
-            const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
-            const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-            chosenDates = `${d1} - ${d2}`;
-            document.getElementById('selected-dates').innerText = chosenDates;
-            document.getElementById('btn-submit').disabled = false;
-          } else {
-            document.getElementById('btn-submit').disabled = true;
-          }
+    // 3. เริ่มเชื่อมต่อ LIFF
+    liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
+
+    // 4. ปุ่มกดยืนยัน
+    document.getElementById('btn-submit').addEventListener('click', async () => {
+      if (!chosenDates) return;
+
+      const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}`;
+      const msg2 = `ขอเลขบัญชีโอนมัดจำ`;
+
+      if (liff.isLoggedIn() && liff.isInClient()) {
+        try {
+          await liff.sendMessages([
+            { type: 'text', text: msg1 },
+            { type: 'text', text: msg2 }
+          ]);
+          liff.closeWindow();
+        } catch (e) {
+          alert("ไม่สามารถส่งข้อความได้: " + e.message);
         }
-      });
-
-      // 3. เริ่มเชื่อมต่อ LIFF
-      liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
-
-      // 4. ปุ่มกดยืนยัน ส่งข้อความเข้า LINE
-      document.getElementById('btn-submit').addEventListener('click', async () => {
-        if (!chosenDates) return;
-
-        const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}`;
-        const msg2 = `ขอเลขบัญชีโอนมัดจำ`;
-
-        if (liff.isLoggedIn() && liff.isInClient()) {
-          try {
-            await liff.sendMessages([
-              { type: 'text', text: msg1 },
-              { type: 'text', text: msg2 }
-            ]);
-            liff.closeWindow();
-          } catch (e) {
-            alert("ไม่สามารถส่งข้อความได้: " + e.message);
-          }
-        } else {
-          alert("กรุณาเปิดลิงก์นี้ผ่าน LINE เท่านั้นครับ");
-        }
-      });
-    }
-
-    initApp();
+      } else {
+        alert("กรุณาเปิดลิงก์นี้ผ่าน LINE");
+      }
+    });
   </script>
 </body>
 </html>
