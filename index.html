@@ -49,7 +49,7 @@
     const MY_LIFF_ID = "2011900022-TMj4fk64";
     let chosenDates = "";
 
-    // ตัวอย่างวันที่ติดจองชั่วคราว (เดี๋ยวเราจะเอาข้อมูลจาก Agoda/Booking มาใส่แทนตรงนี้)
+    // ตัวอย่างวันที่ติดจองชั่วคราว
     const bookedDates = [
       "2026-10-15", "2026-10-16", "2026-10-25"
     ];
@@ -64,47 +64,4 @@
         disable: bookedDates,
         onChange: function(selectedDates, dateStr) {
           if (selectedDates.length === 2) {
-            const start = selectedDates[0].toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
-            const end = selectedDates[1].toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
-            chosenDates = `${start} - ${end}`;
-            document.getElementById('selected-dates').innerText = chosenDates;
-            document.getElementById('btn-submit').disabled = false;
-          } else {
-            document.getElementById('btn-submit').disabled = true;
-          }
-        }
-      });
-
-      // เชื่อมต่อ LIFF
-      try {
-        await liff.init({ liffId: MY_LIFF_ID });
-      } catch (err) {
-        console.error("LIFF Init Error:", err);
-      }
-
-      // เมื่อลูกค้ากดปุ่มยืนยัน
-      document.getElementById('btn-submit').addEventListener('click', async () => {
-        if (!chosenDates) return;
-        
-        const textMsg = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}\n(ขอเลขบัญชีโอนมัดจำ)`;
-
-        if (liff.isLoggedIn() && liff.isInClient()) {
-          try {
-            await liff.sendMessages([{
-              type: 'text',
-              text: textMsg
-            }]);
-            liff.closeWindow(); // ปิดหน้าต่างกลับไปที่แชท
-          } catch (e) {
-            alert("ส่งข้อความไม่สำเร็จ: " + e.message);
-          }
-        } else {
-          alert("กรุณาเปิดลิงก์นี้ผ่าน LINE: " + textMsg);
-        }
-      });
-    }
-
-    initApp();
-  </script>
-</body>
-</html>
+            const start = selectedDates[0].toLocaleDateString('th-
