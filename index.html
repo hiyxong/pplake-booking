@@ -45,22 +45,20 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
-    const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
-
     let chosenDates = "";
 
-    // 1. วาดปฏิทินขึ้นมาทันที ลื่นๆ ไม่ต้องรอโหลด
-    const fp = flatpickr("#calendar-inline", {
+    // 1. เรนเดอร์ปฏิทินขึ้นมาทันที ไม่ติดบล็อกวันที่ทดสอบ 15,16 แล้ว
+    flatpickr("#calendar-inline", {
       inline: true,
       mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
-      disable: [], // เริ่มต้นไม่มีวันล็อคปลอม 15,16 แล้ว
+      disable: [], // ว่างไว้ก่อน รอซิงก์จริง
       onChange: function(selectedDates) {
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
           const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          chosenDates = d1 + " - " + d2;
+          chosenDates = `${d1} - ${d2}`;
           document.getElementById('selected-dates').innerText = chosenDates;
           document.getElementById('btn-submit').disabled = false;
         } else {
@@ -69,58 +67,10 @@
       }
     });
 
-    // 2. ดึงวันติดจองจาก Google Calendar ในพื้นหลัง
-    async function syncCalendar() {
-      try {
-        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(ICAL_URL);
-        const res = await fetch(proxyUrl);
-        const icsData = await res.text();
-        const booked = [];
-
-        const lines = icsData.split(/\r?\n/);
-        let currentStart = null;
-        let currentEnd = null;
-
-        for (let line of lines) {
-          if (line.startsWith("DTSTART")) {
-            const val = line.split(":")[1];
-            currentStart = val ? val.substring(0, 8) : null;
-          } else if (line.startsWith("DTEND")) {
-            const val = line.split(":")[1];
-            currentEnd = val ? val.substring(0, 8) : null;
-          } else if (line.startsWith("END:VEVENT")) {
-            if (currentStart) {
-              const parseYMD = (s) => `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
-              if (currentEnd) {
-                let curr = new Date(parseYMD(currentStart));
-                const stop = new Date(parseYMD(currentEnd));
-                while (curr < stop) {
-                  booked.push(curr.toISOString().split('T')[0]);
-                  curr.setDate(curr.getDate() + 1);
-                }
-              } else {
-                booked.push(parseYMD(currentStart));
-              }
-            }
-            currentStart = null;
-            currentEnd = null;
-          }
-        }
-
-        if (booked.length > 0) {
-          fp.set('disable', booked);
-        }
-      } catch (err) {
-        console.log("Sync error:", err);
-      }
-    }
-
-    syncCalendar();
-
-    // 3. เริ่มเชื่อมต่อ LIFF
+    // 2. เชื่อมต่อ LIFF
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-    // 4. ปุ่มกดยืนยัน
+    // 3. ปุ่มกดส่งข้อความ
     document.getElementById('btn-submit').addEventListener('click', async () => {
       if (!chosenDates) return;
 
