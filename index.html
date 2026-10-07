@@ -19,39 +19,42 @@
 </head>
 <body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center justify-center font-sans">
   <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-5 border border-slate-200">
-    <div class="text-center mb-4">
+    <div class="text-center mb-3">
       <h1 class="text-lg font-bold text-slate-800 tracking-wide">PP LAKE POOL VILLA</h1>
-      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน - เช็คเอาท์</p>
+      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน - เช็คเอาท์<br><span class="text-[11px] text-slate-400">Select Check-in - Check-out Dates</span></p>
     </div>
 
     <!-- กล่องแสดงปฏิทิน -->
-    <div id="calendar-inline" class="flex justify-center mb-4"></div>
+    <div id="calendar-inline" class="flex justify-center mb-3"></div>
 
     <!-- เลือกจำนวนผู้เข้าพัก -->
     <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-700 mb-1">👥 จำนวนผู้เข้าพัก:</label>
-      <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
-        <option value="1 - 4 ท่าน">1 - 4 ท่าน</option>
-        <option value="5 - 8 ท่าน" selected>5 - 8 ท่าน</option>
-        <option value="9 - 10 ท่าน">9 - 10 ท่าน</option>
-        <option value="11 - 12 ท่าน">11 - 12 ท่าน</option>
-        <option value="มากกว่า 12 ท่าน (เสริมที่นอน)">มากกว่า 12 ท่าน (เสริมที่นอน)</option>
+      <label class="block text-xs font-semibold text-slate-700 mb-1">
+        👥 จำนวนผู้เข้าพัก / Guests:
+      </label>
+      <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+        <option value="1 - 4 ท่าน (Guests)">1 - 4 ท่าน (Guests)</option>
+        <option value="5 - 8 ท่าน (Guests)" selected>5 - 8 ท่าน (Guests)</option>
+        <option value="9 - 10 ท่าน (Guests)">9 - 10 ท่าน (Guests)</option>
+        <option value="11 - 12 ท่าน (Guests)">11 - 12 ท่าน (Guests)</option>
+        <option value="มากกว่า 12 ท่าน (12+ Guests / Extra bed)">มากกว่า 12 ท่าน (12+ Guests / Extra bed)</option>
       </select>
     </div>
 
     <!-- สรุปวันที่เลือก -->
     <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
       <div class="flex justify-between items-center mb-1">
-        <span class="font-medium">วันที่เลือก:</span>
-        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ต้องการพัก</span>
+        <span class="font-medium">วันที่เลือก / Dates:</span>
+        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ / Please select</span>
       </div>
-      <p class="text-[11px] text-slate-400">*เช็คอิน 14:00 น. / เช็คเอาท์ 11:00 น.</p>
+      <p class="text-[11px] text-slate-500">*เช็คอิน (Check-in) 14:00 น. / เช็คเอาท์ (Check-out) 11:00 น.</p>
     </div>
 
     <!-- ปุ่มกดยืนยัน -->
     <button id="btn-submit" disabled 
-      class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm">
-      ยืนยันวันที่ & ขอเลขบัญชี
+      class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm flex flex-col items-center justify-center leading-tight">
+      <span>ยืนยันวันที่ & ขอเลขบัญชี</span>
+      <span class="text-[11px] font-normal opacity-90">Confirm Dates & Payment Details</span>
     </button>
   </div>
 
@@ -70,8 +73,11 @@
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
           const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          chosenDates = `${d1} - ${d2}`;
-          document.getElementById('selected-dates').innerText = chosenDates;
+          const d1_en = selectedDates[0].toISOString().split('T')[0];
+          const d2_en = selectedDates[1].toISOString().split('T')[0];
+          
+          chosenDates = `${d1} - ${d2} (${d1_en} to ${d2_en})`;
+          document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
           document.getElementById('btn-submit').disabled = false;
         } else {
           document.getElementById('btn-submit').disabled = true;
@@ -87,8 +93,8 @@
       if (!chosenDates) return;
       const guests = document.getElementById('guest-count').value;
 
-      const msg1 = `สนใจจองที่พัก PP Lake Pool Villa\n🗓 วันที่: ${chosenDates}\n👥 ผู้เข้าพัก: ${guests}`;
-      const msg2 = `ขอเลขบัญชีโอนมัดจำ`;
+      const msg1 = `สนใจจองที่พัก / Booking Request: PP Lake Pool Villa\n🗓 วันที่ / Dates: ${chosenDates}\n👥 ผู้เข้าพัก / Guests: ${guests}`;
+      const msg2 = `ขอเลขบัญชีโอนมัดจำ / Payment Details`;
 
       if (liff.isLoggedIn() && liff.isInClient()) {
         try {
@@ -101,7 +107,7 @@
           alert("ไม่สามารถส่งข้อความได้: " + e.message);
         }
       } else {
-        alert("กรุณาเปิดลิงก์นี้ผ่าน LINE");
+        alert("กรุณาเปิดลิงก์นี้ผ่าน LINE / Please open via LINE");
       }
     });
   </script>
