@@ -27,9 +27,15 @@
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
 
+    /* ซ่อนวันของเดือนก่อนหน้าและเดือนถัดไป ไม่ให้โผล่มาปนกวนสายตา */
+    .flatpickr-day.prevMonthDay,
+    .flatpickr-day.nextMonthDay {
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
     /* วันที่ติดจอง (Booked): พื้นสีส้ม ตัวเลขสีขาว ห้ามคลิก */
-    .flatpickr-day.booked-orange,
-    .flatpickr-day.booked-orange:hover {
+    .flatpickr-day.booked-orange {
       background-color: #f97316 !important;
       color: #ffffff !important;
       border-color: #ea580c !important;
@@ -97,51 +103,28 @@
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
 
-    // รายการวันที่ติดจองตามตาราง
-    const RAW_BOOKED = [
+    // รายชื่อวันที่ติดจอง
+    const BOOKED_LIST = [
       // ต.ค. 2026
-      { from: "2026-10-10", to: "2026-10-14" },
-      { from: "2026-10-16", to: "2026-10-31" },
+      "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
+      "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20",
+      "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+      "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31",
+
       // พ.ย. 2026
       "2026-11-01", "2026-11-03",
-      { from: "2026-11-05", to: "2026-11-09" },
-      { from: "2026-11-12", to: "2026-11-15" },
-      { from: "2026-11-20", to: "2026-11-22" },
-      "2026-11-25",
-      { from: "2026-11-26", to: "2026-11-30" },
+      "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09",
+      "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
+      "2026-11-20", "2026-11-21", "2026-11-22",
+      "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30",
+
       // ธ.ค. 2026
-      { from: "2026-12-04", to: "2026-12-06" },
-      { from: "2026-12-11", to: "2026-12-12" },
-      "2026-12-19",
-      { from: "2026-12-25", to: "2026-12-26" },
-      { from: "2026-12-30", to: "2026-12-31" }
+      "2026-12-04", "2026-12-05", "2026-12-06",
+      "2026-12-11", "2026-12-12", "2026-12-19",
+      "2026-12-25", "2026-12-26", "2026-12-30", "2026-12-31"
     ];
 
-    // กระจายวันทั้งหมดออกมาใส่ Set เพื่อง่ายต่อการระบายสีส้ม
-    const bookedDateSet = new Set();
-    RAW_BOOKED.forEach(item => {
-      if (typeof item === "string") {
-        bookedDateSet.add(item);
-      } else if (item.from && item.to) {
-        let cur = new Date(item.from);
-        const stop = new Date(item.to);
-        while (cur <= stop) {
-          const y = cur.getFullYear();
-          const m = String(cur.getMonth() + 1).padStart(2, '0');
-          const d = String(cur.getDate()).padStart(2, '0');
-          bookedDateSet.add(`${y}-${m}-${d}`);
-          cur.setDate(cur.getDate() + 1);
-        }
-      }
-    });
-
-    function formatDateLocal(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
+    const bookedSet = new Set(BOOKED_LIST);
     let chosenDates = "";
 
     flatpickr("#calendar-inline", {
@@ -149,10 +132,21 @@
       mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
-      disable: Array.from(bookedDateSet),
+      showMonths: 1,
+      disable: BOOKED_LIST,
       onDayCreate: function(dObj, dStr, fp, dayElem) {
-        const dateStr = formatDateLocal(dayElem.dateObj);
-        if (bookedDateSet.has(dateStr)) {
+        // ไม่ต้องแตะต้องวันของเดือนอื่น
+        if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
+          return;
+        }
+
+        const d = dayElem.dateObj;
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        const formatted = `${year}-${month}-${day}`;
+
+        if (bookedSet.has(formatted)) {
           dayElem.classList.add("booked-orange");
           dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
         }
@@ -161,10 +155,16 @@
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
           const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          const d1_en = formatDateLocal(selectedDates[0]);
-          const d2_en = formatDateLocal(selectedDates[1]);
           
-          chosenDates = `${d1} - ${d2} (${d1_en} to ${d2_en})`;
+          const y1 = selectedDates[0].getFullYear();
+          const m1 = String(selectedDates[0].getMonth() + 1).padStart(2, '0');
+          const day1 = String(selectedDates[0].getDate()).padStart(2, '0');
+
+          const y2 = selectedDates[1].getFullYear();
+          const m2 = String(selectedDates[1].getMonth() + 1).padStart(2, '0');
+          const day2 = String(selectedDates[1].getDate()).padStart(2, '0');
+          
+          chosenDates = `${d1} - ${d2} (${y1}-${m1}-${day1} to ${y2}-${m2}-${day2})`;
           document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
           document.getElementById('btn-submit').disabled = false;
         } else {
