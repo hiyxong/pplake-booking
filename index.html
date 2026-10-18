@@ -29,17 +29,14 @@
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
 
-    /* สไตล์วันที่ติดจอง (Booked) ให้เป็นสีส้มทึบชัดเจน และกดเลือกไม่ได้ */
-    .flatpickr-day.flatpickr-disabled, 
-    .flatpickr-day.flatpickr-disabled:hover,
+    /* ระบายสีส้มเฉพาะวันที่ติดจองจริง (ที่มีคลาส booked-orange เท่านั้น) */
     .flatpickr-day.booked-orange {
       background-color: #f97316 !important; /* ส้ม */
       color: #ffffff !important;
       border-color: #ea580c !important;
       text-decoration: none !important;
-      opacity: 0.95 !important;
       cursor: not-allowed !important;
-      border-radius: 8px;
+      opacity: 0.9 !important;
     }
   </style>
 </head>
@@ -53,7 +50,7 @@
     <!-- กล่องแสดงปฏิทิน -->
     <div id="calendar-inline" class="flex justify-center mb-2"></div>
 
-    <!-- แถบอธิบายสถานะสี (Legend) -->
+    <!-- แถบอธิบายสถานะสี -->
     <div class="flex items-center justify-center gap-4 py-2 px-3 mb-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600">
       <div class="flex items-center gap-1.5">
         <span class="w-3.5 h-3.5 rounded-md bg-white border border-slate-300 shadow-sm inline-block"></span>
@@ -98,28 +95,34 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
-    // *** วางลิงก์ Public address in iCal format ทั้งหมดลงในเครื่องหมายคำพูดด้านล่างนี้ได้เลยครับ ***
-    const ICAL_URL = "https://calendar.google.com/calendar/ical/...ใส่ลิงก์เต็มตรงนี้.../basic.ics";
+    // *** วางลิงก์ Public iCal URL จาก Google Calendar ตรงนี้ ***
+    const ICAL_URL = "https://calendar.google.com/calendar/ical/.../basic.ics";
 
     let chosenDates = "";
-    let bookedRanges = [];
-    let fpInstance = null;
+    let bookedDatesSet = new Set();
+    let fp = null;
 
-    // ฟังก์ชันเริ่มปฏิทิน
-    function initCalendar(disableList) {
-      if (fpInstance) {
-        fpInstance.set('disable', disableList);
-        fpInstance.redraw();
-        return;
-      }
-      fpInstance = flatpickr("#calendar-inline", {
+    function renderCalendar() {
+      fp = flatpickr("#calendar-inline", {
         inline: true,
         mode: "range",
         minDate: "today",
         dateFormat: "Y-m-d",
-        disable: disableList,
-        onDayCreate: function(dObj, dStr, fp, dayElem) {
-          if (dayElem.classList.contains("flatpickr-disabled")) {
+        disable: [
+          function(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return bookedDatesSet.has(`${y}-${m}-${d}`);
+          }
+        ],
+        onDayCreate: function(dObj, dStr, fpInstance, dayElem) {
+          const y = dayElem.dateObj.getFullYear();
+          const m = String(dayElem.dateObj.getMonth() + 1).padStart(2, '0');
+          const d = String(dayElem.dateObj.getDate()).padStart(2, '0');
+          const dateString = `${y}-${m}-${d}`;
+
+          if (bookedDatesSet.has(dateString)) {
             dayElem.classList.add("booked-orange");
             dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
           }
@@ -141,9 +144,12 @@
       });
     }
 
-    // ดึงวันติดจองจาก Google Calendar อัตโนมัติผ่าน CORS Proxy
-    async function loadBookedDatesFromCalendar() {
+    async function syncCalendar() {
       try {
+        if (!ICAL_URL || ICAL_URL.includes("...")) {
+          renderCalendar();
+          return;
+        }
         const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
         const res = await fetch(proxyUrl);
         const icsData = await res.text();
@@ -153,30 +159,27 @@
 
         vevents.forEach(eventComp => {
           const event = new ICAL.Event(eventComp);
-          const startDate = event.startDate.toJSDate();
-          const endDate = event.endDate.toJSDate();
-          // ลบวันสิ้นสุดออก 1 วันสำหรับ All-day event ของ iCal
-          const adjustedEnd = new Date(endDate);
-          adjustedEnd.setDate(adjustedEnd.getDate() - 1);
+          let cur = new Date(event.startDate.toJSDate());
+          const end = new Date(event.endDate.toJSDate());
 
-          bookedRanges.push({
-            from: startDate.toISOString().split('T')[0],
-            to: adjustedEnd.toISOString().split('T')[0]
-          });
+          // วนลูปเก็บทุกวันในช่วงที่ติดจอง
+          while (cur < end) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            bookedDatesSet.add(`${y}-${m}-${d}`);
+            cur.setDate(cur.getDate() + 1);
+          }
         });
-
-        initCalendar(bookedRanges);
-      } catch (err) {
-        console.log("Calendar sync note:", err);
-        initCalendar([]); // ถ้าดึงไม่สำเร็จให้เปิดปฏิทินตามปกติ
+      } catch (e) {
+        console.error("iCal load error:", e);
       }
+      renderCalendar();
     }
 
-    // เรียกเริ่มทำงาน
-    loadBookedDatesFromCalendar();
+    syncCalendar();
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-    // ส่งแชท
     document.getElementById('btn-submit').addEventListener('click', async () => {
       if (!chosenDates) return;
       const guests = document.getElementById('guest-count').value;
