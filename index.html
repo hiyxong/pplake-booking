@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- ตัวช่วยแปลงไฟล์ iCal -->
+  <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
@@ -31,11 +33,11 @@
     .flatpickr-day.flatpickr-disabled, 
     .flatpickr-day.flatpickr-disabled:hover,
     .flatpickr-day.booked-orange {
-      background-color: #f97316 !important; /* Tailwind Orange-500 */
+      background-color: #f97316 !important; /* ส้ม */
       color: #ffffff !important;
       border-color: #ea580c !important;
       text-decoration: none !important;
-      opacity: 0.9 !important;
+      opacity: 0.95 !important;
       cursor: not-allowed !important;
       border-radius: 8px;
     }
@@ -96,59 +98,88 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
+    // *** วางลิงก์ Public address in iCal format ทั้งหมดลงในเครื่องหมายคำพูดด้านล่างนี้ได้เลยครับ ***
+    const ICAL_URL = "https://calendar.google.com/calendar/ical/...ใส่ลิงก์เต็มตรงนี้.../basic.ics";
+
     let chosenDates = "";
+    let bookedRanges = [];
+    let fpInstance = null;
 
-    // -------------------------------------------------------------
-    // รายการวันที่ติดจอง (Booked Dates) สามารถใส่ช่วงวันที่เต็มตามตารางได้ที่นี่
-    // -------------------------------------------------------------
-    const BOOKED_DATES = [
-      // ตัวอย่างช่วงวันที่เต็มในเดือน ต.ค. และ พ.ย. 2026 ตามตาราง
-      { from: "2026-10-18", to: "2026-10-24" },
-      { from: "2026-10-25", to: "2026-10-31" },
-      { from: "2026-11-01", to: "2026-11-07" },
-      { from: "2026-11-09", to: "2026-11-15" },
-      { from: "2026-11-16", to: "2026-11-23" },
-      { from: "2026-11-28", to: "2026-11-30" }
-    ];
-
-    // เรนเดอร์ปฏิทิน
-    flatpickr("#calendar-inline", {
-      inline: true,
-      mode: "range",
-      minDate: "today",
-      dateFormat: "Y-m-d",
-      disable: BOOKED_DATES, // บล็อกวันที่ติดจองให้กดไม่ได้
-      onDayCreate: function(dObj, dStr, fp, dayElem) {
-        // เติมคลาสสีส้มให้วันที่ถูกปิดจอง
-        if (dayElem.classList.contains("flatpickr-disabled")) {
-          dayElem.classList.add("booked-orange");
-          dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
-        }
-      },
-      onChange: function(selectedDates) {
-        if (selectedDates.length === 2) {
-          const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
-          const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          const d1_en = selectedDates[0].toISOString().split('T')[0];
-          const d2_en = selectedDates[1].toISOString().split('T')[0];
-          
-          chosenDates = `${d1} - ${d2} (${d1_en} to ${d2_en})`;
-          document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
-          document.getElementById('btn-submit').disabled = false;
-        } else {
-          document.getElementById('btn-submit').disabled = true;
-        }
+    // ฟังก์ชันเริ่มปฏิทิน
+    function initCalendar(disableList) {
+      if (fpInstance) {
+        fpInstance.set('disable', disableList);
+        fpInstance.redraw();
+        return;
       }
-    });
+      fpInstance = flatpickr("#calendar-inline", {
+        inline: true,
+        mode: "range",
+        minDate: "today",
+        dateFormat: "Y-m-d",
+        disable: disableList,
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+          if (dayElem.classList.contains("flatpickr-disabled")) {
+            dayElem.classList.add("booked-orange");
+            dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
+          }
+        },
+        onChange: function(selectedDates) {
+          if (selectedDates.length === 2) {
+            const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
+            const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
+            const d1_en = selectedDates[0].toISOString().split('T')[0];
+            const d2_en = selectedDates[1].toISOString().split('T')[0];
+            
+            chosenDates = `${d1} - ${d2} (${d1_en} to ${d2_en})`;
+            document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
+            document.getElementById('btn-submit').disabled = false;
+          } else {
+            document.getElementById('btn-submit').disabled = true;
+          }
+        }
+      });
+    }
 
-    // เริ่มเชื่อมต่อ LIFF
+    // ดึงวันติดจองจาก Google Calendar อัตโนมัติผ่าน CORS Proxy
+    async function loadBookedDatesFromCalendar() {
+      try {
+        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
+        const res = await fetch(proxyUrl);
+        const icsData = await res.text();
+        const jcalData = ICAL.parse(icsData);
+        const comp = new ICAL.Component(jcalData);
+        const vevents = comp.getAllSubcomponents('vevent');
+
+        vevents.forEach(eventComp => {
+          const event = new ICAL.Event(eventComp);
+          const startDate = event.startDate.toJSDate();
+          const endDate = event.endDate.toJSDate();
+          // ลบวันสิ้นสุดออก 1 วันสำหรับ All-day event ของ iCal
+          const adjustedEnd = new Date(endDate);
+          adjustedEnd.setDate(adjustedEnd.getDate() - 1);
+
+          bookedRanges.push({
+            from: startDate.toISOString().split('T')[0],
+            to: adjustedEnd.toISOString().split('T')[0]
+          });
+        });
+
+        initCalendar(bookedRanges);
+      } catch (err) {
+        console.log("Calendar sync note:", err);
+        initCalendar([]); // ถ้าดึงไม่สำเร็จให้เปิดปฏิทินตามปกติ
+      }
+    }
+
+    // เรียกเริ่มทำงาน
+    loadBookedDatesFromCalendar();
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-    // ปุ่มกดส่งข้อความเข้าห้องแชท
+    // ส่งแชท
     document.getElementById('btn-submit').addEventListener('click', async () => {
       if (!chosenDates) return;
       const guests = document.getElementById('guest-count').value;
-
       const msg1 = `สนใจจองที่พัก / Booking Request: PP Lake Pool Villa\n🗓 วันที่ / Dates: ${chosenDates}\n👥 ผู้เข้าพัก / Guests: ${guests}`;
       const msg2 = `ขอเลขบัญชีโอนมัดจำ/Payment`;
 
