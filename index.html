@@ -120,6 +120,14 @@
 
     let chosenDates = "";
 
+    // แปลงวัตถุ Date เป็นรูปแบบ YYYY-MM-DD แบบเวลาท้องถิ่น
+    function formatDateLocal(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
     flatpickr("#calendar-inline", {
       inline: true,
       mode: "range",
@@ -127,10 +135,9 @@
       dateFormat: "Y-m-d",
       disable: BOOKED_DATES,
       onDayCreate: function(dObj, dStr, fp, dayElem) {
-        // ให้สีส้มเฉพาะวันที่ถูกบล็อกและอยู่ในอนาคต
         const cellDate = dayElem.dateObj;
         const today = new Date();
-        today.setHours(0,0,0,0);
+        today.setHours(0, 0, 0, 0);
 
         if (dayElem.classList.contains("flatpickr-disabled") && cellDate >= today) {
           dayElem.classList.add("booked-orange");
@@ -141,8 +148,9 @@
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
           const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          const d1_en = selectedDates[0].toISOString().split('T')[0];
-          const d2_en = selectedDates[1].toISOString().split('T')[0];
+          
+          const d1_en = formatDateLocal(selectedDates[0]);
+          const d2_en = formatDateLocal(selectedDates[1]);
           
           chosenDates = `${d1} - ${d2} (${d1_en} to ${d2_en})`;
           document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
