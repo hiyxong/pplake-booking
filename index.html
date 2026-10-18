@@ -12,9 +12,33 @@
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
-    .flatpickr-calendar { margin: 0 auto; box-shadow: none; border: 1px solid #e2e8f0; border-radius: 1rem; }
-    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { background: #0284c7 !important; border-color: #0284c7 !important; }
-    .flatpickr-day.inRange { background: #e0f2fe !important; box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; }
+    .flatpickr-calendar { 
+      margin: 0 auto; 
+      box-shadow: none; 
+      border: 1px solid #e2e8f0; 
+      border-radius: 1rem; 
+    }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { 
+      background: #0284c7 !important; 
+      border-color: #0284c7 !important; 
+    }
+    .flatpickr-day.inRange { 
+      background: #e0f2fe !important; 
+      box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
+    }
+
+    /* สไตล์วันที่ติดจอง (Booked) ให้เป็นสีส้มทึบชัดเจน และกดเลือกไม่ได้ */
+    .flatpickr-day.flatpickr-disabled, 
+    .flatpickr-day.flatpickr-disabled:hover,
+    .flatpickr-day.booked-orange {
+      background-color: #f97316 !important; /* Tailwind Orange-500 */
+      color: #ffffff !important;
+      border-color: #ea580c !important;
+      text-decoration: none !important;
+      opacity: 0.9 !important;
+      cursor: not-allowed !important;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center justify-center font-sans">
@@ -25,7 +49,19 @@
     </div>
 
     <!-- กล่องแสดงปฏิทิน -->
-    <div id="calendar-inline" class="flex justify-center mb-3"></div>
+    <div id="calendar-inline" class="flex justify-center mb-2"></div>
+
+    <!-- แถบอธิบายสถานะสี (Legend) -->
+    <div class="flex items-center justify-center gap-4 py-2 px-3 mb-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600">
+      <div class="flex items-center gap-1.5">
+        <span class="w-3.5 h-3.5 rounded-md bg-white border border-slate-300 shadow-sm inline-block"></span>
+        <span>สีขาว : ว่าง (Available)</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-3.5 h-3.5 rounded-md bg-orange-500 border border-orange-600 shadow-sm inline-block"></span>
+        <span class="font-medium text-orange-700">สีส้ม : ติดจอง (Booked)</span>
+      </div>
+    </div>
 
     <!-- เลือกจำนวนผู้เข้าพัก -->
     <div class="mb-3">
@@ -62,13 +98,33 @@
     const MY_LIFF_ID = "2011900022-TMj4fk64";
     let chosenDates = "";
 
+    // -------------------------------------------------------------
+    // รายการวันที่ติดจอง (Booked Dates) สามารถใส่ช่วงวันที่เต็มตามตารางได้ที่นี่
+    // -------------------------------------------------------------
+    const BOOKED_DATES = [
+      // ตัวอย่างช่วงวันที่เต็มในเดือน ต.ค. และ พ.ย. 2026 ตามตาราง
+      { from: "2026-10-18", to: "2026-10-24" },
+      { from: "2026-10-25", to: "2026-10-31" },
+      { from: "2026-11-01", to: "2026-11-07" },
+      { from: "2026-11-09", to: "2026-11-15" },
+      { from: "2026-11-16", to: "2026-11-23" },
+      { from: "2026-11-28", to: "2026-11-30" }
+    ];
+
     // เรนเดอร์ปฏิทิน
     flatpickr("#calendar-inline", {
       inline: true,
       mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
-      disable: [],
+      disable: BOOKED_DATES, // บล็อกวันที่ติดจองให้กดไม่ได้
+      onDayCreate: function(dObj, dStr, fp, dayElem) {
+        // เติมคลาสสีส้มให้วันที่ถูกปิดจอง
+        if (dayElem.classList.contains("flatpickr-disabled")) {
+          dayElem.classList.add("booked-orange");
+          dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
+        }
+      },
       onChange: function(selectedDates) {
         if (selectedDates.length === 2) {
           const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
