@@ -27,11 +27,10 @@
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
 
-    /* ซ่อนวันของเดือนก่อนหน้าและเดือนถัดไป ไม่ให้โผล่มาปนกวนสายตา */
+    /* ซ่อนวันของเดือนอื่นให้หายไปทั้งหมดแบบไร้ร่องรอย */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
-      visibility: hidden !important;
-      pointer-events: none !important;
+      display: none !important;
     }
 
     /* วันที่ติดจอง (Booked): พื้นสีส้ม ตัวเลขสีขาว ห้ามคลิก */
@@ -103,7 +102,6 @@
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
 
-    // รายชื่อวันที่ติดจอง
     const BOOKED_LIST = [
       // ต.ค. 2026
       "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
@@ -132,11 +130,11 @@
       mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
-      showMonths: 1,
       disable: BOOKED_LIST,
       onDayCreate: function(dObj, dStr, fp, dayElem) {
-        // ไม่ต้องแตะต้องวันของเดือนอื่น
+        // ถ้าเป็นวันของเดือนอื่น ให้ข้ามไปเลยและซ่อนทิ้ง
         if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
+          dayElem.style.display = "none";
           return;
         }
 
