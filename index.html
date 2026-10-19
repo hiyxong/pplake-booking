@@ -206,18 +206,15 @@
       });
     }
 
-    // วาดปฏิทินรอบแรก
     renderCalendar();
 
-    // ฟังก์ชันดึง iCal สด พร้อมทำลายแคช 100%
     async function syncCalendarData() {
       try {
-        // เติม ?nocache เข้าไปเพื่อบังคับให้ดึงสดทุกครั้ง ไม่ใช้แคชเดิม
-        const targetUrl = ICAL_URL + "?nocache=" + Date.now();
-        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(targetUrl);
+        // ใช้ corsproxy.io ซึ่งอัปเดตไฟล์สดแบบ Realtime ไม่ดองแคช
+        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(ICAL_URL + "?cache=" + Date.now());
 
         const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error("Fetch failed");
+        if (!res.ok) throw new Error("Proxy error");
         const icsData = await res.text();
 
         const jcalData = ICAL.parse(icsData);
@@ -231,6 +228,7 @@
           let start = event.startDate.toJSDate();
           let end = event.endDate.toJSDate();
 
+          // วนลูปเก็บทุกวันเข้าพัก (ไม่รวมวันเช็คเอาท์)
           let cur = new Date(start);
           while (cur < end) {
             bookedSet.add(formatISODate(cur));
@@ -238,9 +236,8 @@
           }
         });
 
-        // รีเฟรชปฏิทินทันทีหลังจากคำนวณวันเสร็จ
         renderCalendar();
-        document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย";
+        document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย (" + bookedSet.size + " วัน)";
         document.getElementById('sync-badge').className = "text-center text-[11px] text-emerald-600 mb-2 font-medium";
       } catch (err) {
         console.warn("Sync error:", err);
