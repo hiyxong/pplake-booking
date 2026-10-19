@@ -9,8 +9,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <!-- ตัวอ่านไฟล์ iCal -->
-  <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
@@ -53,11 +51,6 @@
     <div class="text-center mb-3">
       <h1 class="text-lg font-bold text-slate-800 tracking-wide">PP LAKE POOL VILLA</h1>
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
-    </div>
-
-    <!-- แถบแจ้งเตือนสถานะการซิงค์ -->
-    <div id="sync-badge" class="text-center text-[11px] text-emerald-600 mb-2 font-medium">
-      🟢 ซิงค์ข้อมูลล่าสุดเรียบร้อย
     </div>
 
     <!-- กล่องปฏิทิน -->
@@ -108,29 +101,28 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
-    const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
 
-    // รายการวันจองสำรอง (Fallback) แสดงผลทันทีระหว่างรอซิงค์
-    const DEFAULT_BOOKED = [
+    const BOOKED_LIST = [
+      // ต.ค. 2026
       "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
       "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20",
       "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
       "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31",
+
+      // พ.ย. 2026
       "2026-11-01", "2026-11-03",
       "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09",
       "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
       "2026-11-20", "2026-11-21", "2026-11-22",
       "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30",
+
+      // ธ.ค. 2026
       "2026-12-04", "2026-12-05", "2026-12-06",
       "2026-12-11", "2026-12-12", "2026-12-19",
       "2026-12-25", "2026-12-26", "2026-12-30", "2026-12-31"
     ];
 
-    let bookedSet = new Set(DEFAULT_BOOKED);
-    let fpInstance = null;
-    let checkInStr = "";
-    let checkOutStr = "";
-    let totalNights = 0;
+    const bookedSet = new Set(BOOKED_LIST);
 
     function formatISODate(d) {
       const year = d.getFullYear();
@@ -143,128 +135,84 @@
       return d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
     }
 
-    function renderCalendar() {
-      if (fpInstance) fpInstance.destroy();
+    let checkInStr = "";
+    let checkOutStr = "";
+    let totalNights = 0;
 
-      fpInstance = flatpickr("#calendar-inline", {
-        inline: true,
-        mode: "range",
-        minDate: "today",
-        dateFormat: "Y-m-d",
-        onDayCreate: function(dObj, dStr, instance, dayElem) {
-          if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
-            dayElem.style.display = "none";
+    flatpickr("#calendar-inline", {
+      inline: true,
+      mode: "range",
+      minDate: "today",
+      dateFormat: "Y-m-d",
+      onDayCreate: function(dObj, dStr, instance, dayElem) {
+        if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
+          dayElem.style.display = "none";
+          return;
+        }
+
+        const dateStr = formatISODate(dayElem.dateObj);
+        if (bookedSet.has(dateStr)) {
+          dayElem.classList.add("booked-orange");
+          dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
+        }
+      },
+      onChange: function(selectedDates, dateStr, instance) {
+        if (selectedDates.length === 1) {
+          const firstDateStr = formatISODate(selectedDates[0]);
+          if (bookedSet.has(firstDateStr)) {
+            alert("วันที่ " + formatThaiDate(selectedDates[0]) + " ติดจองแล้ว ไม่สามารถเลือกเป็นวันเช็คอินได้ครับ");
+            instance.clear();
+            document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+            document.getElementById('btn-submit').disabled = true;
+            return;
+          }
+          document.getElementById('selected-dates').innerText = formatThaiDate(selectedDates[0]) + " - (แตะเลือกวันเช็คเอาท์)";
+          document.getElementById('btn-submit').disabled = true;
+        } 
+        else if (selectedDates.length === 2) {
+          const startDate = selectedDates[0];
+          const endDate = selectedDates[1];
+
+          let hasConflict = false;
+          let temp = new Date(startDate);
+          while (temp < endDate) {
+            if (bookedSet.has(formatISODate(temp))) {
+              hasConflict = true;
+              break;
+            }
+            temp.setDate(temp.getDate() + 1);
+          }
+
+          if (hasConflict) {
+            alert("ช่วงวันที่เลือกมีวันที่ติดจองอยู่ กรุณาเลือกช่วงวันว่างใหม่อีกครั้งครับ");
+            instance.clear();
+            document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+            document.getElementById('btn-submit').disabled = true;
             return;
           }
 
-          const dateStr = formatISODate(dayElem.dateObj);
-          if (bookedSet.has(dateStr)) {
-            dayElem.classList.add("booked-orange");
-            dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
-          }
-        },
-        onChange: function(selectedDates, dateStr, instance) {
-          if (selectedDates.length === 1) {
-            const firstDateStr = formatISODate(selectedDates[0]);
-            if (bookedSet.has(firstDateStr)) {
-              alert("วันที่ " + formatThaiDate(selectedDates[0]) + " ติดจองแล้ว ไม่สามารถเลือกเป็นวันเช็คอินได้ครับ");
-              instance.clear();
-              document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
-              document.getElementById('btn-submit').disabled = true;
-              return;
-            }
-            document.getElementById('selected-dates').innerText = formatThaiDate(selectedDates[0]) + " - (แตะเลือกวันเช็คเอาท์)";
-            document.getElementById('btn-submit').disabled = true;
-          } 
-          else if (selectedDates.length === 2) {
-            const startDate = selectedDates[0];
-            const endDate = selectedDates[1];
+          const diffTime = Math.abs(endDate - startDate);
+          totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-            let hasConflict = false;
-            let temp = new Date(startDate);
-            while (temp < endDate) {
-              if (bookedSet.has(formatISODate(temp))) {
-                hasConflict = true;
-                break;
-              }
-              temp.setDate(temp.getDate() + 1);
-            }
-
-            if (hasConflict) {
-              alert("ช่วงวันที่เลือกมีวันที่ติดจองอยู่ กรุณาเลือกช่วงวันว่างใหม่อีกครั้งครับ");
-              instance.clear();
-              document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
-              document.getElementById('btn-submit').disabled = true;
-              return;
-            }
-
-            const diffTime = Math.abs(endDate - startDate);
-            totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (totalNights === 0) {
-              totalNights = 1;
-              const nextDay = new Date(startDate);
-              nextDay.setDate(nextDay.getDate() + 1);
-              checkInStr = formatThaiDate(startDate);
-              checkOutStr = formatThaiDate(nextDay);
-            } else {
-              checkInStr = formatThaiDate(startDate);
-              checkOutStr = formatThaiDate(endDate);
-            }
-
-            document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (${totalNights} คืน)`;
-            document.getElementById('btn-submit').disabled = false;
+          if (totalNights === 0) {
+            totalNights = 1;
+            const nextDay = new Date(startDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            checkInStr = formatThaiDate(startDate);
+            checkOutStr = formatThaiDate(nextDay);
           } else {
-            document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
-            document.getElementById('btn-submit').disabled = true;
+            checkInStr = formatThaiDate(startDate);
+            checkOutStr = formatThaiDate(endDate);
           }
+
+          document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (${totalNights} คืน)`;
+          document.getElementById('btn-submit').disabled = false;
+        } else {
+          document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+          document.getElementById('btn-submit').disabled = true;
         }
-      });
-    }
-
-    // ฟังก์ชันดึง iCal เบื้องหลัง (Background Sync)
-    async function syncCalendarData() {
-      try {
-        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000); // ตัดถ้าเกิน 6 วิ
-
-        const res = await fetch(proxyUrl, { signal: controller.signal });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) throw new Error("Fetch failed");
-        const icsData = await res.text();
-
-        const jcalData = ICAL.parse(icsData);
-        const comp = new ICAL.Component(jcalData);
-        const vevents = comp.getAllSubcomponents('vevent');
-
-        // ถ้ามีข้อมูลใน Google Calendar ดึงมาอัปเดตทับทันที
-        if (vevents.length > 0) {
-          bookedSet.clear();
-          vevents.forEach(vevent => {
-            const event = new ICAL.Event(vevent);
-            let start = event.startDate.toJSDate();
-            let end = event.endDate.toJSDate();
-
-            let cur = new Date(start);
-            while (cur < end) {
-              bookedSet.add(formatISODate(cur));
-              cur.setDate(cur.getDate() + 1);
-            }
-          });
-          renderCalendar();
-        }
-        document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย";
-      } catch (err) {
-        console.warn("Live sync warning:", err);
-        document.getElementById('sync-badge').innerText = "🟢 พร้อมให้บริการ";
       }
-    }
-
-    // แสดงผลปฏิทินทันที ไม่ต้องรอ
-    renderCalendar();
-    syncCalendarData();
+    });
 
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
