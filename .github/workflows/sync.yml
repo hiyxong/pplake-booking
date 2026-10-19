@@ -28,7 +28,7 @@ jobs:
           const fs = require("fs");
 
           // ลิงก์ iCal (ตอนนี้ใช้ของลูกพี่ ต่อไปถ้าของเพื่อนมา ก็แค่มาแก้ลิงก์บรรทัดนี้ที่เดียว)
-          const icalUrl = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
+          const icalUrl = "https://calendar.google.com/calendar/ical/pplakepool%40gmail.com/public/basic.ics";
 
           https.get(icalUrl, (res) => {
             let data = "";
