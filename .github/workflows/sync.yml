@@ -1,0 +1,86 @@
+name: Sync Google Calendar Bookings
+
+on:
+  schedule:
+    # รันอัตโนมัติทุกๆ 15 นาที
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # เปิดให้เรากดสั่งรันอัปเดตเองได้ทันทีด้วยมือ
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Fetch and Parse iCal
+        run: |
+          node -e '
+          const https = require("https");
+          const fs = require("fs");
+
+          // ลิงก์ iCal (ตอนนี้ใช้ของลูกพี่ ต่อไปถ้าของเพื่อนมา ก็แค่มาแก้ลิงก์บรรทัดนี้ที่เดียว)
+          const icalUrl = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
+
+          https.get(icalUrl, (res) => {
+            let data = "";
+            res.on("data", chunk => data += chunk);
+            res.on("end", () => {
+              const dates = new Set();
+              const eventBlocks = data.split("BEGIN:VEVENT");
+
+              for (let i = 1; i < eventBlocks.length; i++) {
+                const block = eventBlocks[i].split("END:VEVENT")[0];
+
+                const startMatch = block.match(/DTSTART(?:;VALUE=DATE)?:(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
+                const endMatch = block.match(/DTEND(?:;VALUE=DATE)?:(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?/);
+
+                if (startMatch) {
+                  let startDate = new Date(Date.UTC(parseInt(startMatch[1]), parseInt(startMatch[2]) - 1, parseInt(startMatch[3])));
+                  let endDate = endMatch 
+                    ? new Date(Date.UTC(parseInt(endMatch[1]), parseInt(endMatch[2]) - 1, parseInt(endMatch[3])))
+                    : new Date(startDate);
+
+                  // กรณีเป็นกิจกรรมวันเดียว (start กับ end เท่ากัน) หรือไม่มี end
+                  if (startDate.getTime() === endDate.getTime()) {
+                    const y = startDate.getUTCFullYear();
+                    const m = String(startDate.getUTCMonth() + 1).padStart(2, "0");
+                    const d = String(startDate.getUTCDate()).padStart(2, "0");
+                    dates.add(`${y}-${m}-${d}`);
+                  } else {
+                    let cur = new Date(startDate);
+                    while (cur < endDate) {
+                      const y = cur.getUTCFullYear();
+                      const m = String(cur.getUTCMonth() + 1).padStart(2, "0");
+                      const d = String(cur.getUTCDate()).padStart(2, "0");
+                      dates.add(`${y}-${m}-${d}`);
+                      cur.setUTCDate(cur.getUTCDate() + 1);
+                    }
+                  }
+                }
+              }
+
+              const result = Array.from(dates).sort();
+              fs.writeFileSync("booked.json", JSON.stringify(result, null, 2));
+              console.log("Sync success! Total booked days:", result.length);
+            });
+          }).on("error", err => {
+            console.error(err);
+            process.exit(1);
+          });
+          '
+
+      - name: Commit and Push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add booked.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update booked.json from Google Calendar" && git push)
