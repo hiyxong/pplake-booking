@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PP LAKE POOL VILLA</title>
-  <!-- Tailwind CSS & Flatpickr ปฏิทิน -->
+  <!-- Tailwind CSS & Flatpickr -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
@@ -18,27 +18,19 @@
       border: 1px solid #e2e8f0; 
       border-radius: 1rem; 
     }
-    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { 
+    .flatpickr-day.selected { 
       background: #0284c7 !important; 
       border-color: #0284c7 !important; 
     }
-    .flatpickr-day.inRange { 
-      background: #e0f2fe !important; 
-      box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
-    }
-
-    /* ซ่อนวันของเดือนอื่น */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
       display: none !important;
     }
-
-    /* วันที่ติดจอง (Booked): พื้นสีส้ม ตัวเลขสีขาว ห้ามคลิก */
+    /* สีส้มวันติดจอง */
     .flatpickr-day.booked-orange {
       background-color: #f97316 !important;
       color: #ffffff !important;
       border-color: #ea580c !important;
-      text-decoration: none !important;
       cursor: not-allowed !important;
       opacity: 0.95 !important;
       pointer-events: none !important;
@@ -50,13 +42,13 @@
   <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-5 border border-slate-200">
     <div class="text-center mb-3">
       <h1 class="text-lg font-bold text-slate-800 tracking-wide">PP LAKE POOL VILLA</h1>
-      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน - เช็คเอาท์<br><span class="text-[11px] text-slate-400">Select Check-in - Check-out Dates</span></p>
+      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันที่ต้องการเข้าพัก (Check-in Date)</p>
     </div>
 
-    <!-- กล่องแสดงปฏิทิน -->
+    <!-- กล่องปฏิทิน -->
     <div id="calendar-inline" class="flex justify-center mb-2"></div>
 
-    <!-- แถบอธิบายสถานะสี -->
+    <!-- คำอธิบายสถานะ -->
     <div class="flex items-center justify-center gap-4 py-2 px-3 mb-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600">
       <div class="flex items-center gap-1.5">
         <span class="w-3.5 h-3.5 rounded-md bg-white border border-slate-300 shadow-sm inline-block"></span>
@@ -68,30 +60,39 @@
       </div>
     </div>
 
-    <!-- เลือกจำนวนผู้เข้าพัก -->
-    <div class="mb-3">
-      <label class="block text-xs font-semibold text-slate-700 mb-1">
-        👥 จำนวนผู้เข้าพัก / Guests:
-      </label>
-      <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
-        <option value="1 - 4 ท่าน (Guests)">1 - 4 ท่าน (Guests)</option>
-        <option value="5 - 8 ท่าน (Guests)" selected>5 - 8 ท่าน (Guests)</option>
-        <option value="9 - 10 ท่าน (Guests)">9 - 10 ท่าน (Guests)</option>
-        <option value="11 - 12 ท่าน (Guests)">11 - 12 ท่าน (Guests)</option>
-        <option value="มากกว่า 12 ท่าน (12+ Guests / Extra bed)">มากกว่า 12 ท่าน (12+ Guests / Extra bed)</option>
-      </select>
+    <!-- เลือกจำนวนคืน และ จำนวนผู้เข้าพัก -->
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">🌙 จำนวนคืน / Nights:</label>
+        <select id="night-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-2.5 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+          <option value="1" selected>1 คืน (Night)</option>
+          <option value="2">2 คืน (Nights)</option>
+          <option value="3">3 คืน (Nights)</option>
+          <option value="4">4 คืน (Nights)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">👥 ผู้เข้าพัก / Guests:</label>
+        <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-2.5 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+          <option value="1 - 4 ท่าน">1 - 4 ท่าน</option>
+          <option value="5 - 8 ท่าน" selected>5 - 8 ท่าน</option>
+          <option value="9 - 10 ท่าน">9 - 10 ท่าน</option>
+          <option value="11 - 12 ท่าน">11 - 12 ท่าน</option>
+          <option value="มากกว่า 12 ท่าน">มากกว่า 12 ท่าน</option>
+        </select>
+      </div>
     </div>
 
-    <!-- สรุปวันที่เลือก -->
+    <!-- สรุปข้อมูลการจอง -->
     <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
       <div class="flex justify-between items-center mb-1">
-        <span class="font-medium">วันที่เลือก / Dates:</span>
-        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ / Please select</span>
+        <span class="font-medium">วันเข้าพัก - เช็คเอาท์:</span>
+        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาแตะเลือกวันบนปฏิทิน</span>
       </div>
-      <p class="text-[11px] text-slate-500">⏰ เช็คอิน (Check-in) 14:00 น. | เช็คเอาท์ (Check-out) 11:00 น.</p>
+      <p class="text-[11px] text-slate-500">⏰ เช็คอิน 14:00 น. | เช็คเอาท์ 11:00 น.</p>
     </div>
 
-    <!-- ปุ่มกดยืนยัน -->
+    <!-- ปุ่มส่งข้อความ -->
     <button id="btn-submit" disabled 
       class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm flex flex-col items-center justify-center leading-tight">
       <span>ยืนยันวันที่ & ขอเลขบัญชี</span>
@@ -123,18 +124,30 @@
     ];
 
     const bookedSet = new Set(BOOKED_LIST);
-
-    let checkInStr = "";
-    let checkOutStr = "";
-    let totalNights = 0;
+    let selectedCheckInDate = null;
+    let finalSummaryText = "";
 
     function formatThaiDate(d) {
       return d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
     }
 
+    function updateBookingDisplay() {
+      if (!selectedCheckInDate) return;
+      const nights = parseInt(document.getElementById('night-count').value);
+      
+      const checkOutDate = new Date(selectedCheckInDate);
+      checkOutDate.setDate(checkOutDate.getDate() + nights);
+
+      const inStr = formatThaiDate(selectedCheckInDate);
+      const outStr = formatThaiDate(checkOutDate);
+
+      finalSummaryText = `${inStr} - ${outStr} (${nights} คืน)`;
+      document.getElementById('selected-dates').innerText = finalSummaryText;
+      document.getElementById('btn-submit').disabled = false;
+    }
+
     flatpickr("#calendar-inline", {
       inline: true,
-      mode: "range",
       minDate: "today",
       dateFormat: "Y-m-d",
       disable: BOOKED_LIST,
@@ -156,54 +169,22 @@
         }
       },
       onChange: function(selectedDates) {
-        if (selectedDates.length === 1) {
-          // ถ้าแตะเลือก 1 วัน (เช่น แตะวันที่ 2 วันเดียว) -> ระบบจะคิดเป็นพัก 1 คืนให้อัตโนมัติ เช็คเอาท์วันถัดไปทันที
-          const checkIn = selectedDates[0];
-          const checkOut = new Date(checkIn);
-          checkOut.setDate(checkOut.getDate() + 1);
-
-          checkInStr = formatThaiDate(checkIn);
-          checkOutStr = formatThaiDate(checkOut);
-          totalNights = 1;
-
-          document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (1 คืน)`;
-          document.getElementById('btn-submit').disabled = false;
-
-        } else if (selectedDates.length === 2) {
-          // ถ้าแตะเลือกช่วงวันที่ (เช่น แตะวันที่ 4 ถึง 6)
-          const checkIn = selectedDates[0];
-          let checkOut = selectedDates[1];
-
-          // กรณีลูกค้าแตะเบิ้ลวันเดิม
-          if (checkIn.getTime() === checkOut.getTime()) {
-            checkOut = new Date(checkIn);
-            checkOut.setDate(checkOut.getDate() + 1);
-            totalNights = 1;
-          } else {
-            const diffTime = Math.abs(checkOut - checkIn);
-            totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
-
-          checkInStr = formatThaiDate(checkIn);
-          checkOutStr = formatThaiDate(checkOut);
-
-          document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (${totalNights} คืน)`;
-          document.getElementById('btn-submit').disabled = false;
-        } else {
-          document.getElementById('btn-submit').disabled = true;
+        if (selectedDates.length > 0) {
+          selectedCheckInDate = selectedDates[0];
+          updateBookingDisplay();
         }
       }
     });
 
+    document.getElementById('night-count').addEventListener('change', updateBookingDisplay);
+
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
-    // ส่งข้อความเมื่อกดปุ่มยืนยัน
     document.getElementById('btn-submit').addEventListener('click', async () => {
-      if (!checkInStr || !checkOutStr) return;
+      if (!selectedCheckInDate) return;
       const guests = document.getElementById('guest-count').value;
 
-      // จัดฟอร์แมตข้อความเป๊ะตามที่ลูกพี่ต้องการ พร้อมระบุเวลาเช็คอิน-เอาท์
-      const msg1 = `สนใจจองที่พัก: PP Lake Pool Villa\n🗓 วันที่: ${checkInStr} - ${checkOutStr} (${totalNights} คืน)\n⏰ เช็คอิน: 14:00 น. | เช็คเอาท์: 11:00 น.\n👥 จำนวนผู้เข้าพัก: ${guests}`;
+      const msg1 = `สนใจจองที่พัก: PP Lake Pool Villa\n🗓 วันที่: ${finalSummaryText}\n⏰ เช็คอิน: 14:00 น. | เช็คเอาท์: 11:00 น.\n👥 จำนวนผู้เข้าพัก: ${guests}`;
       const msg2 = `ขอเลขบัญชีโอนมัดจำ/Payment`;
 
       if (liff.isLoggedIn() && liff.isInClient()) {
