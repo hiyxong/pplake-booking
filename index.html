@@ -27,7 +27,7 @@
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
 
-    /* ซ่อนวันของเดือนอื่นให้หายไปทั้งหมดแบบไร้ร่องรอย */
+    /* ซ่อนวันของเดือนอื่น */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
       display: none !important;
@@ -88,7 +88,7 @@
         <span class="font-medium">วันที่เลือก / Dates:</span>
         <span id="selected-dates" class="text-sky-700 font-bold">กรุณาเลือกวันที่ / Please select</span>
       </div>
-      <p class="text-[11px] text-slate-500">*เช็คอิน (Check-in) 14:00 น. / เช็คเอาท์ (Check-out) 11:00 น.</p>
+      <p class="text-[11px] text-slate-500">⏰ เช็คอิน (Check-in) 14:00 น. | เช็คเอาท์ (Check-out) 11:00 น.</p>
     </div>
 
     <!-- ปุ่มกดยืนยัน -->
@@ -123,7 +123,14 @@
     ];
 
     const bookedSet = new Set(BOOKED_LIST);
-    let chosenDates = "";
+
+    let checkInStr = "";
+    let checkOutStr = "";
+    let totalNights = 0;
+
+    function formatThaiDate(d) {
+      return d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
+    }
 
     flatpickr("#calendar-inline", {
       inline: true,
@@ -132,7 +139,6 @@
       dateFormat: "Y-m-d",
       disable: BOOKED_LIST,
       onDayCreate: function(dObj, dStr, fp, dayElem) {
-        // ถ้าเป็นวันของเดือนอื่น ให้ข้ามไปเลยและซ่อนทิ้ง
         if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
           dayElem.style.display = "none";
           return;
@@ -150,20 +156,38 @@
         }
       },
       onChange: function(selectedDates) {
-        if (selectedDates.length === 2) {
-          const d1 = selectedDates[0].getDate() + '/' + (selectedDates[0].getMonth() + 1) + '/' + (selectedDates[0].getFullYear() + 543);
-          const d2 = selectedDates[1].getDate() + '/' + (selectedDates[1].getMonth() + 1) + '/' + (selectedDates[1].getFullYear() + 543);
-          
-          const y1 = selectedDates[0].getFullYear();
-          const m1 = String(selectedDates[0].getMonth() + 1).padStart(2, '0');
-          const day1 = String(selectedDates[0].getDate()).padStart(2, '0');
+        if (selectedDates.length === 1) {
+          // ถ้าแตะเลือก 1 วัน (เช่น แตะวันที่ 2 วันเดียว) -> ระบบจะคิดเป็นพัก 1 คืนให้อัตโนมัติ เช็คเอาท์วันถัดไปทันที
+          const checkIn = selectedDates[0];
+          const checkOut = new Date(checkIn);
+          checkOut.setDate(checkOut.getDate() + 1);
 
-          const y2 = selectedDates[1].getFullYear();
-          const m2 = String(selectedDates[1].getMonth() + 1).padStart(2, '0');
-          const day2 = String(selectedDates[1].getDate()).padStart(2, '0');
-          
-          chosenDates = `${d1} - ${d2} (${y1}-${m1}-${day1} to ${y2}-${m2}-${day2})`;
-          document.getElementById('selected-dates').innerText = `${d1} - ${d2}`;
+          checkInStr = formatThaiDate(checkIn);
+          checkOutStr = formatThaiDate(checkOut);
+          totalNights = 1;
+
+          document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (1 คืน)`;
+          document.getElementById('btn-submit').disabled = false;
+
+        } else if (selectedDates.length === 2) {
+          // ถ้าแตะเลือกช่วงวันที่ (เช่น แตะวันที่ 4 ถึง 6)
+          const checkIn = selectedDates[0];
+          let checkOut = selectedDates[1];
+
+          // กรณีลูกค้าแตะเบิ้ลวันเดิม
+          if (checkIn.getTime() === checkOut.getTime()) {
+            checkOut = new Date(checkIn);
+            checkOut.setDate(checkOut.getDate() + 1);
+            totalNights = 1;
+          } else {
+            const diffTime = Math.abs(checkOut - checkIn);
+            totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+
+          checkInStr = formatThaiDate(checkIn);
+          checkOutStr = formatThaiDate(checkOut);
+
+          document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (${totalNights} คืน)`;
           document.getElementById('btn-submit').disabled = false;
         } else {
           document.getElementById('btn-submit').disabled = true;
@@ -173,11 +197,13 @@
 
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
+    // ส่งข้อความเมื่อกดปุ่มยืนยัน
     document.getElementById('btn-submit').addEventListener('click', async () => {
-      if (!chosenDates) return;
+      if (!checkInStr || !checkOutStr) return;
       const guests = document.getElementById('guest-count').value;
 
-      const msg1 = `สนใจจองที่พัก / Booking Request: PP Lake Pool Villa\n🗓 วันที่ / Dates: ${chosenDates}\n👥 ผู้เข้าพัก / Guests: ${guests}`;
+      // จัดฟอร์แมตข้อความเป๊ะตามที่ลูกพี่ต้องการ พร้อมระบุเวลาเช็คอิน-เอาท์
+      const msg1 = `สนใจจองที่พัก: PP Lake Pool Villa\n🗓 วันที่: ${checkInStr} - ${checkOutStr} (${totalNights} คืน)\n⏰ เช็คอิน: 14:00 น. | เช็คเอาท์: 11:00 น.\n👥 จำนวนผู้เข้าพัก: ${guests}`;
       const msg2 = `ขอเลขบัญชีโอนมัดจำ/Payment`;
 
       if (liff.isLoggedIn() && liff.isInClient()) {
