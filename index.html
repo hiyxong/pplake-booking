@@ -27,11 +27,14 @@
       background: #e0f2fe !important; 
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
-    /* ซ่อนวันของเดือนก่อนหน้าและเดือนถัดไป แต่คงโครงสร้างตาราง 7 ช่องไว้ ไม่ให้เลขกระโดดเบี้ยว */
+
+    /* ซ่อนวันนอกเดือนแบบรักษากล่องตาราง 7 ช่องเป๊ะ เลขไม่กระโดด */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
+      opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
+      cursor: default !important;
     }
 
     /* วันที่ติดจอง (Booked): แสดงเป็นสีส้ม */
@@ -141,6 +144,7 @@
         mode: "range",
         minDate: "today",
         dateFormat: "Y-m-d",
+        showMonths: 1,
         onDayCreate: function(dObj, dStr, instance, dayElem) {
           const dateStr = formatISODate(dayElem.dateObj);
           if (bookedSet.has(dateStr)) {
@@ -211,7 +215,6 @@
       }
     }
 
-    // โหลดไฟล์ booked.json
     async function loadBookings() {
       try {
         const res = await fetch("booked.json?t=" + Date.now());
