@@ -110,7 +110,6 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
-    // ลิงก์ Web App ล่าสุดของลูกพี่
     const GAS_URL = "https://script.google.com/macros/s/AKfycbyQVHH_y8ACtwibxp6cXK-cE-iJ3I8hSkSY-7wLpyunuQchhjUxpUBWT1UcnJUtN_g/exec";
 
     let bookedSet = new Set();
@@ -216,8 +215,16 @@
       }
     }
 
+    // ฟังก์ชันรับข้อมูลกลับจาก JSONP
+    window.onCalendarDataLoaded = function(liveList) {
+      if (Array.isArray(liveList) && liveList.length > 0) {
+        bookedSet = new Set(liveList);
+        initOrUpdateCalendar();
+      }
+    };
+
     async function loadBookings() {
-      // 1. โหลดข้อมูลแคชเร็วจาก booked.json
+      // 1. โหลดข้อมูลฐานจาก booked.json ขึ้นมาโชว์ทันทีก่อน
       try {
         const res = await fetch("booked.json?t=" + Date.now());
         if (res.ok) {
@@ -226,22 +233,13 @@
           initOrUpdateCalendar();
         }
       } catch (e) {
-        console.warn(e);
+        initOrUpdateCalendar();
       }
 
-      // 2. ดึงข้อมูลสด Real-time ทันทีจาก Google Apps Script
-      try {
-        const resLive = await fetch(GAS_URL + "?t=" + Date.now());
-        if (resLive.ok) {
-          const liveList = await resLive.json();
-          if (Array.isArray(liveList) && liveList.length > 0) {
-            bookedSet = new Set(liveList);
-            initOrUpdateCalendar();
-          }
-        }
-      } catch (err) {
-        console.warn("Live sync error", err);
-      }
+      // 2. ดึงข้อมูลสดผ่าน JSONP สคริปต์แท็ก (แก้ปัญหา Redirect 302 และ CORS ของ Google ในแอป LINE)
+      const script = document.createElement("script");
+      script.src = `${GAS_URL}?callback=onCalendarDataLoaded&t=${Date.now()}`;
+      document.body.appendChild(script);
     }
 
     loadBookings();
