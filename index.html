@@ -53,9 +53,9 @@
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
     </div>
 
-    <!-- แถบแสดงสถานะการซิงค์ -->
-    <div id="sync-badge" class="text-center text-[11px] text-sky-600 mb-2 font-medium">
-      ⏳ กำลังซิงค์ข้อมูลจาก Google Calendar...
+    <!-- แถบแสดงสถานะ -->
+    <div id="sync-badge" class="text-center text-[11px] text-emerald-600 mb-2 font-medium">
+      🟢 ปฏิทินพร้อมให้บริการ
     </div>
 
     <!-- กล่องปฏิทิน -->
@@ -107,26 +107,7 @@
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
 
-    // ลิงก์ Web App จาก Google Apps Script ของลูกพี่โดยตรง
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzhzk6CGTtl-RSOHDCt7bc1F48scDbgkfhCveVc6viYCyEBSN6aYgQX-90op2MMkGiq/exec";
-
-    // ข้อมูลสำรองระหว่างรอโหลด 1 วินาทีแรก
-    const FALLBACK_BOOKED = [
-      "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
-      "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20",
-      "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
-      "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31",
-      "2026-11-01", "2026-11-03",
-      "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09",
-      "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
-      "2026-11-20", "2026-11-21", "2026-11-22",
-      "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30",
-      "2026-12-04", "2026-12-05", "2026-12-06",
-      "2026-12-11", "2026-12-12", "2026-12-19",
-      "2026-12-25", "2026-12-26", "2026-12-30", "2026-12-31"
-    ];
-
-    let bookedSet = new Set(FALLBACK_BOOKED);
+    let bookedSet = new Set();
     let fpInstance = null;
     let checkInStr = "";
     let checkOutStr = "";
@@ -233,33 +214,24 @@
       }
     }
 
-    // แสดงปฏิทินทันที
-    initOrUpdateCalendar();
-
-    // ดึงข้อมูลสดจาก Google Apps Script
-    async function loadFromGoogleCalendar() {
+    // โหลดไฟล์ booked.json ภายใน repository ตัวเอง (เร็วสุดๆ ไม่โดนบล็อก CORS แน่นอน)
+    async function loadBookings() {
       try {
-        const res = await fetch(GAS_API_URL + "?t=" + Date.now());
-        const liveDates = await res.json();
-
-        if (Array.isArray(liveDates) && liveDates.length > 0) {
-          // ใช้รายการวันจริงจาก Google Calendar ทั้งหมด (ถ้าลบใน Calendar หน้าเว็บก็จะกลายเป็นสีขาวตามทันที)
-          bookedSet = new Set(liveDates);
+        const res = await fetch("booked.json?t=" + Date.now());
+        if (res.ok) {
+          const list = await res.json();
+          bookedSet = new Set(list);
           initOrUpdateCalendar();
-          const badge = document.getElementById('sync-badge');
-          badge.innerText = "🟢 ซิงค์ Google Calendar ล่าสุดเรียบร้อย";
-          badge.className = "text-center text-[11px] text-emerald-600 mb-2 font-medium";
+          document.getElementById('sync-badge').innerText = `🟢 ซิงค์ปฏิทินล่าสุดเรียบร้อย (${bookedSet.size} วัน)`;
+          return;
         }
-      } catch (err) {
-        console.error("GAS Sync error:", err);
-        const badge = document.getElementById('sync-badge');
-        badge.innerText = "🟢 ปฏิทินพร้อมใช้งาน";
-        badge.className = "text-center text-[11px] text-emerald-600 mb-2 font-medium";
+      } catch (e) {
+        console.warn("Could not load booked.json", e);
       }
+      initOrUpdateCalendar();
     }
 
-    loadFromGoogleCalendar();
-
+    loadBookings();
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
 
     document.getElementById('btn-submit').addEventListener('click', async () => {
