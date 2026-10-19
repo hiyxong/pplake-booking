@@ -56,7 +56,7 @@
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
     </div>
 
-    <!-- แถบแสดงสถานะ (จุดเขียวเรียบหรู ไม่รกตา) -->
+    <!-- แถบแสดงสถานะ (จุดเขียวกะพริบเรียบหรู ไม่รกตา) -->
     <div class="flex items-center justify-center gap-1.5 mb-2.5">
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
       <span class="text-[11px] text-slate-500 font-medium">ปฏิทินพร้อมให้บริการ</span>
@@ -214,7 +214,7 @@
       }
     }
 
-    // โหลดไฟล์ booked.json ภายในตัวเอง
+    // โหลดไฟล์ booked.json
     async function loadBookings() {
       try {
         const res = await fetch("booked.json?t=" + Date.now());
