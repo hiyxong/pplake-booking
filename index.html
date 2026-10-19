@@ -28,13 +28,11 @@
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
 
-    /* ซ่อนวันนอกเดือนแบบรักษากล่องตาราง 7 ช่องเป๊ะ เลขไม่กระโดด */
+    /* ซ่อนวันนอกเดือนแต่คงช่องว่าง 7 วันต่อแถวไว้ ไม่ให้เลข 29-31 กระโดด */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
-      opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
-      cursor: default !important;
     }
 
     /* วันที่ติดจอง (Booked): แสดงเป็นสีส้ม */
@@ -58,9 +56,10 @@
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
     </div>
 
-    <!-- แถบแสดงสถานะ -->
-    <div id="sync-badge" class="text-center text-[11px] text-emerald-600 mb-2 font-medium">
-      🟢 ปฏิทินพร้อมให้บริการ
+    <!-- แถบแสดงสถานะ (จุดเขียวเรียบหรู ไม่รกตา) -->
+    <div class="flex items-center justify-center gap-1.5 mb-2.5">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="text-[11px] text-slate-500 font-medium">ปฏิทินพร้อมให้บริการ</span>
     </div>
 
     <!-- กล่องปฏิทิน -->
@@ -215,15 +214,13 @@
       }
     }
 
+    // โหลดไฟล์ booked.json ภายในตัวเอง
     async function loadBookings() {
       try {
         const res = await fetch("booked.json?t=" + Date.now());
         if (res.ok) {
           const list = await res.json();
           bookedSet = new Set(list);
-          initOrUpdateCalendar();
-          document.getElementById('sync-badge').innerText = `🟢 ซิงค์ปฏิทินล่าสุดเรียบร้อย (${bookedSet.size} วัน)`;
-          return;
         }
       } catch (e) {
         console.warn("Could not load booked.json", e);
