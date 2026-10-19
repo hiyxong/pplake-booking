@@ -27,9 +27,11 @@
       background: #e0f2fe !important; 
       box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
     }
+    /* ซ่อนวันของเดือนก่อนหน้าและเดือนถัดไป แต่คงโครงสร้างตาราง 7 ช่องไว้ ไม่ให้เลขกระโดดเบี้ยว */
     .flatpickr-day.prevMonthDay,
     .flatpickr-day.nextMonthDay {
-      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
     }
 
     /* วันที่ติดจอง (Booked): แสดงเป็นสีส้ม */
@@ -140,11 +142,6 @@
         minDate: "today",
         dateFormat: "Y-m-d",
         onDayCreate: function(dObj, dStr, instance, dayElem) {
-          if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
-            dayElem.style.display = "none";
-            return;
-          }
-
           const dateStr = formatISODate(dayElem.dateObj);
           if (bookedSet.has(dateStr)) {
             dayElem.classList.add("booked-orange");
@@ -214,7 +211,7 @@
       }
     }
 
-    // โหลดไฟล์ booked.json ภายใน repository ตัวเอง (เร็วสุดๆ ไม่โดนบล็อก CORS แน่นอน)
+    // โหลดไฟล์ booked.json
     async function loadBookings() {
       try {
         const res = await fetch("booked.json?t=" + Date.now());
