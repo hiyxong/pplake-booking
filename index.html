@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <!-- ตัวอ่านไฟล์ iCal -->
+  <!-- ตัวแปลง iCal -->
   <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
   <!-- LINE LIFF SDK -->
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -54,7 +54,7 @@
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
     </div>
 
-    <!-- สถานะโหลดข้อมูล -->
+    <!-- ข้อความสถานะการซิงค์ -->
     <div id="loading-status" class="text-center text-xs text-sky-600 mb-2 font-medium">
       ⏳ กำลังซิงค์ข้อมูลปฏิทินล่าสุด...
     </div>
@@ -107,8 +107,8 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
-    
-    // *** จุดวางลิงก์ iCal ของลูกพี่ (หรือของเพื่อนในอนาคต) ***
+
+    // ลิงก์ iCal ของลูกพี่
     const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
 
     let bookedSet = new Set();
@@ -128,16 +128,8 @@
       return d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
     }
 
-    // ฟังก์ชันดึงวันจองสดจาก Google Calendar
     async function fetchLiveBookings() {
-      if (!ICAL_URL || ICAL_URL.includes("วางลิงก์")) {
-        document.getElementById('loading-status').innerText = "⚠️ ยังไม่ได้ใส่ลิงก์ iCal URL";
-        initCalendar();
-        return;
-      }
-
       try {
-        // ใช้ proxy ดึงเพื่อกันติด CORS บนมือถือ
         const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
         const res = await fetch(proxyUrl);
         const icsData = await res.text();
@@ -153,7 +145,7 @@
           let start = event.startDate.toJSDate();
           let end = event.endDate.toJSDate();
 
-          // เติมวันติดจองลง Set (นับเฉพาะคืนที่พัก ไม่รวมวันเช็คเอาท์)
+          // เติมวันติดจองลง Set (ไม่รวมวันเช็คเอาท์ เพื่อให้ลูกค้าแตะเป็นวันออกได้)
           let cur = new Date(start);
           while (cur < end) {
             bookedSet.add(formatISODate(cur));
@@ -249,7 +241,7 @@
       });
     }
 
-    // เริ่มการดึงข้อมูลสด
+    // เริ่มดึงข้อมูลสด
     fetchLiveBookings();
 
     liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
