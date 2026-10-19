@@ -56,7 +56,7 @@
       <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
     </div>
 
-    <!-- แถบแสดงสถานะ (จุดเขียวกะพริบเรียบหรู ไม่รกตา) -->
+    <!-- แถบแสดงสถานะ (จุดเขียวกะพริบเรียบหรู) -->
     <div class="flex items-center justify-center gap-1.5 mb-2.5">
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
       <span class="text-[11px] text-slate-500 font-medium">ปฏิทิน (Calendar)</span>
@@ -110,6 +110,8 @@
 
   <script>
     const MY_LIFF_ID = "2011900022-TMj4fk64";
+    // ลิงก์ Web App ล่าสุดของลูกพี่
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyQVHH_y8ACtwibxp6cXK-cE-iJ3I8hSkSY-7wLpyunuQchhjUxpUBWT1UcnJUtN_g/exec";
 
     let bookedSet = new Set();
     let fpInstance = null;
@@ -214,18 +216,32 @@
       }
     }
 
-    // โหลดไฟล์ booked.json
     async function loadBookings() {
+      // 1. โหลดข้อมูลแคชเร็วจาก booked.json
       try {
         const res = await fetch("booked.json?t=" + Date.now());
         if (res.ok) {
           const list = await res.json();
           bookedSet = new Set(list);
+          initOrUpdateCalendar();
         }
       } catch (e) {
-        console.warn("Could not load booked.json", e);
+        console.warn(e);
       }
-      initOrUpdateCalendar();
+
+      // 2. ดึงข้อมูลสด Real-time ทันทีจาก Google Apps Script
+      try {
+        const resLive = await fetch(GAS_URL + "?t=" + Date.now());
+        if (resLive.ok) {
+          const liveList = await resLive.json();
+          if (Array.isArray(liveList) && liveList.length > 0) {
+            bookedSet = new Set(liveList);
+            initOrUpdateCalendar();
+          }
+        }
+      } catch (err) {
+        console.warn("Live sync error", err);
+      }
     }
 
     loadBookings();
