@@ -56,8 +56,8 @@
     </div>
 
     <!-- แถบแสดงสถานะ -->
-    <div id="sync-badge" class="text-center text-[11px] text-sky-600 mb-2 font-medium">
-      ⏳ กำลังตรวจสอบสถานะห้องว่าง...
+    <div id="sync-badge" class="text-center text-[11px] text-emerald-600 mb-2 font-medium">
+      🟢 ปฏิทินพร้อมให้บริการ
     </div>
 
     <!-- กล่องปฏิทิน -->
@@ -110,7 +110,26 @@
     const MY_LIFF_ID = "2011900022-TMj4fk64";
     const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
 
-    let bookedSet = new Set();
+    // ฐานข้อมูลวันจองมาตรฐาน (ไม่หายแน่นอน มีครบทั้ง ต.ค. - พ.ย. - ธ.ค. 2026)
+    const BASE_BOOKED = [
+      // ต.ค. 2026
+      "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
+      "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20",
+      "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+      "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31",
+      // พ.ย. 2026
+      "2026-11-01", "2026-11-03",
+      "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09",
+      "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
+      "2026-11-20", "2026-11-21", "2026-11-22",
+      "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30",
+      // ธ.ค. 2026
+      "2026-12-04", "2026-12-05", "2026-12-06",
+      "2026-12-11", "2026-12-12", "2026-12-19",
+      "2026-12-25", "2026-12-26", "2026-12-30", "2026-12-31"
+    ];
+
+    let bookedSet = new Set(BASE_BOOKED);
     let fpInstance = null;
     let checkInStr = "";
     let checkOutStr = "";
@@ -206,29 +225,30 @@
       });
     }
 
+    // เรนเดอร์ปฏิทินทันทีตั้งแต่โหลดหน้า
     renderCalendar();
 
+    // ดึง iCal สดผ่าน allorigins api
     async function syncCalendarData() {
       try {
-        // ใช้ corsproxy.io ซึ่งอัปเดตไฟล์สดแบบ Realtime ไม่ดองแคช
-        const proxyUrl = "https://corsproxy.io/?" + encodeURIComponent(ICAL_URL + "?cache=" + Date.now());
-
+        const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(ICAL_URL + "?t=" + Date.now());
         const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error("Proxy error");
-        const icsData = await res.text();
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const icsData = data.contents;
+        if (!icsData || !icsData.includes("BEGIN:VCALENDAR")) return;
 
         const jcalData = ICAL.parse(icsData);
         const comp = new ICAL.Component(jcalData);
         const vevents = comp.getAllSubcomponents('vevent');
 
-        bookedSet.clear();
-
+        // เติมวันจาก Google Calendar เข้าไปสมทบ
         vevents.forEach(vevent => {
           const event = new ICAL.Event(vevent);
           let start = event.startDate.toJSDate();
           let end = event.endDate.toJSDate();
 
-          // วนลูปเก็บทุกวันเข้าพัก (ไม่รวมวันเช็คเอาท์)
           let cur = new Date(start);
           while (cur < end) {
             bookedSet.add(formatISODate(cur));
@@ -237,11 +257,9 @@
         });
 
         renderCalendar();
-        document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย (" + bookedSet.size + " วัน)";
-        document.getElementById('sync-badge').className = "text-center text-[11px] text-emerald-600 mb-2 font-medium";
+        document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย";
       } catch (err) {
-        console.warn("Sync error:", err);
-        document.getElementById('sync-badge').innerText = "🟢 พร้อมให้บริการ";
+        console.warn("Sync warning:", err);
       }
     }
 
