@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PP LAKE POOL VILLA</title>
+  <!-- Tailwind CSS & Flatpickr -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- ตัวอ่าน iCal -->
+  <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
+  <!-- LINE LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    .flatpickr-calendar { 
+      margin: 0 auto; 
+      box-shadow: none; 
+      border: 1px solid #e2e8f0; 
+      border-radius: 1rem; 
+    }
+    .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange { 
+      background: #0284c7 !important; 
+      border-color: #0284c7 !important; 
+      color: #ffffff !important;
+    }
+    .flatpickr-day.inRange { 
+      background: #e0f2fe !important; 
+      box-shadow: -5px 0 0 #e0f2fe, 5px 0 0 #e0f2fe !important; 
+    }
+    .flatpickr-day.prevMonthDay,
+    .flatpickr-day.nextMonthDay {
+      display: none !important;
+    }
+
+    /* วันที่ติดจอง (Booked): แสดงเป็นสีส้ม */
+    .flatpickr-day.booked-orange {
+      background-color: #f97316 !important;
+      color: #ffffff !important;
+      border-color: #ea580c !important;
+      border-radius: 8px !important;
+    }
+    .flatpickr-day.booked-orange.selected,
+    .flatpickr-day.booked-orange.endRange {
+      background-color: #0284c7 !important;
+      border-color: #0284c7 !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center justify-center font-sans">
+  <div class="max-w-md w-full bg-white rounded-2xl shadow-xl p-5 border border-slate-200">
+    <div class="text-center mb-3">
+      <h1 class="text-lg font-bold text-slate-800 tracking-wide">PP LAKE POOL VILLA</h1>
+      <p class="text-xs text-slate-500 mt-1">🗓 แตะเลือกวันเช็คอิน และวันเช็คเอาท์ (2 ครั้ง)<br><span class="text-[11px] text-slate-400">Tap Check-in date, then Check-out date</span></p>
+    </div>
+
+    <!-- แถบแจ้งเตือนสถานะ -->
+    <div id="sync-badge" class="text-center text-[11px] text-emerald-600 mb-2 font-medium">
+      🟢 ปฏิทินพร้อมใช้งาน
+    </div>
+
+    <!-- กล่องปฏิทิน -->
+    <div id="calendar-inline" class="flex justify-center mb-2"></div>
+
+    <!-- แถบอธิบายสถานะ -->
+    <div class="flex items-center justify-center gap-4 py-2 px-3 mb-3 bg-slate-50 border border-slate-100 rounded-xl text-xs text-slate-600">
+      <div class="flex items-center gap-1.5">
+        <span class="w-3.5 h-3.5 rounded-md bg-white border border-slate-300 shadow-sm inline-block"></span>
+        <span>สีขาว : ว่าง (Available)</span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-3.5 h-3.5 rounded-md bg-orange-500 border border-orange-600 shadow-sm inline-block"></span>
+        <span class="font-medium text-orange-700">สีส้ม : ติดจอง (Booked)</span>
+      </div>
+    </div>
+
+    <!-- เลือกจำนวนผู้เข้าพัก -->
+    <div class="mb-3">
+      <label class="block text-xs font-semibold text-slate-700 mb-1">
+        👥 จำนวนผู้เข้าพัก / Guests:
+      </label>
+      <select id="guest-count" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-800 focus:outline-none focus:border-sky-500">
+        <option value="1 - 4 ท่าน (Guests)">1 - 4 ท่าน (Guests)</option>
+        <option value="5 - 8 ท่าน (Guests)" selected>5 - 8 ท่าน (Guests)</option>
+        <option value="9 - 10 ท่าน (Guests)">9 - 10 ท่าน (Guests)</option>
+        <option value="11 - 12 ท่าน (Guests)">11 - 12 ท่าน (Guests)</option>
+        <option value="มากกว่า 12 ท่าน (12+ Guests / Extra bed)">มากกว่า 12 ท่าน (12+ Guests / Extra bed)</option>
+      </select>
+    </div>
+
+    <!-- สรุปข้อมูลการจอง -->
+    <div class="bg-sky-50 border border-sky-100 rounded-xl p-3 mb-4 text-xs text-slate-700">
+      <div class="flex justify-between items-center mb-1">
+        <span class="font-medium">วันเข้าพัก - เช็คเอาท์:</span>
+        <span id="selected-dates" class="text-sky-700 font-bold">กรุณาแตะเลือกวันเช็คอิน</span>
+      </div>
+      <p class="text-[11px] text-slate-500">⏰ เช็คอิน 14:00 น. | เช็คเอาท์ 11:00 น.</p>
+    </div>
+
+    <!-- ปุ่มกดยืนยัน -->
+    <button id="btn-submit" disabled 
+      class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md text-sm flex flex-col items-center justify-center leading-tight">
+      <span>ยืนยันวันที่ & ขอเลขบัญชี</span>
+      <span class="text-[11px] font-normal opacity-90">Confirm Dates & Payment Details</span>
+    </button>
+  </div>
+
+  <script>
+    const MY_LIFF_ID = "2011900022-TMj4fk64";
+    const ICAL_URL = "https://calendar.google.com/calendar/ical/b54a9de6795c3e12e1d8c3620dcc6149579d0364f1e131bf8685b13725df0e1d%40group.calendar.google.com/public/basic.ics";
+
+    // รายการวันจองมาตรฐานเริ่มต้น (ให้ปฏิทินแสดงผลขึ้นมาทันที 0 วินาที)
+    const DEFAULT_BOOKED = [
+      "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14",
+      "2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19", "2026-10-20",
+      "2026-10-21", "2026-10-22", "2026-10-23", "2026-10-24", "2026-10-25",
+      "2026-10-26", "2026-10-27", "2026-10-28", "2026-10-29", "2026-10-30", "2026-10-31",
+      "2026-11-01", "2026-11-03",
+      "2026-11-05", "2026-11-06", "2026-11-07", "2026-11-08", "2026-11-09",
+      "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
+      "2026-11-20", "2026-11-21", "2026-11-22",
+      "2026-11-25", "2026-11-26", "2026-11-27", "2026-11-28", "2026-11-29", "2026-11-30",
+      "2026-12-04", "2026-12-05", "2026-12-06",
+      "2026-12-11", "2026-12-12", "2026-12-19",
+      "2026-12-25", "2026-12-26", "2026-12-30", "2026-12-31"
+    ];
+
+    let bookedSet = new Set(DEFAULT_BOOKED);
+    let fpInstance = null;
+    let checkInStr = "";
+    let checkOutStr = "";
+    let totalNights = 0;
+
+    function formatISODate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatThaiDate(d) {
+      return d.getDate() + '/' + (d.getMonth() + 1) + '/' + (d.getFullYear() + 543);
+    }
+
+    function renderCalendar() {
+      if (fpInstance) fpInstance.destroy();
+
+      fpInstance = flatpickr("#calendar-inline", {
+        inline: true,
+        mode: "range",
+        minDate: "today",
+        dateFormat: "Y-m-d",
+        onDayCreate: function(dObj, dStr, instance, dayElem) {
+          if (dayElem.classList.contains("prevMonthDay") || dayElem.classList.contains("nextMonthDay")) {
+            dayElem.style.display = "none";
+            return;
+          }
+
+          const dateStr = formatISODate(dayElem.dateObj);
+          if (bookedSet.has(dateStr)) {
+            dayElem.classList.add("booked-orange");
+            dayElem.setAttribute("title", "ติดจองแล้ว (Booked)");
+          }
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+          if (selectedDates.length === 1) {
+            const firstDateStr = formatISODate(selectedDates[0]);
+            if (bookedSet.has(firstDateStr)) {
+              alert("วันที่ " + formatThaiDate(selectedDates[0]) + " ติดจองแล้ว ไม่สามารถเลือกเป็นวันเช็คอินได้ครับ");
+              instance.clear();
+              document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+              document.getElementById('btn-submit').disabled = true;
+              return;
+            }
+            document.getElementById('selected-dates').innerText = formatThaiDate(selectedDates[0]) + " - (แตะเลือกวันเช็คเอาท์)";
+            document.getElementById('btn-submit').disabled = true;
+          } 
+          else if (selectedDates.length === 2) {
+            const startDate = selectedDates[0];
+            const endDate = selectedDates[1];
+
+            let hasConflict = false;
+            let temp = new Date(startDate);
+            while (temp < endDate) {
+              if (bookedSet.has(formatISODate(temp))) {
+                hasConflict = true;
+                break;
+              }
+              temp.setDate(temp.getDate() + 1);
+            }
+
+            if (hasConflict) {
+              alert("ช่วงวันที่เลือกมีวันที่ติดจองอยู่ กรุณาเลือกช่วงวันว่างใหม่อีกครั้งครับ");
+              instance.clear();
+              document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+              document.getElementById('btn-submit').disabled = true;
+              return;
+            }
+
+            const diffTime = Math.abs(endDate - startDate);
+            totalNights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (totalNights === 0) {
+              totalNights = 1;
+              const nextDay = new Date(startDate);
+              nextDay.setDate(nextDay.getDate() + 1);
+              checkInStr = formatThaiDate(startDate);
+              checkOutStr = formatThaiDate(nextDay);
+            } else {
+              checkInStr = formatThaiDate(startDate);
+              checkOutStr = formatThaiDate(endDate);
+            }
+
+            document.getElementById('selected-dates').innerText = `${checkInStr} - ${checkOutStr} (${totalNights} คืน)`;
+            document.getElementById('btn-submit').disabled = false;
+          } else {
+            document.getElementById('selected-dates').innerText = "กรุณาแตะเลือกวันเช็คอิน";
+            document.getElementById('btn-submit').disabled = true;
+          }
+        }
+      });
+    }
+
+    // วาดปฏิทินทันที ไม่มีการหน่วงรอ
+    renderCalendar();
+
+    // ซิงค์ข้อมูล iCal สดเบื้องหลัง
+    async function syncCalendarData() {
+      try {
+        const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(ICAL_URL);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        if (!res.ok) return;
+        const icsData = await res.text();
+
+        const jcalData = ICAL.parse(icsData);
+        const comp = new ICAL.Component(jcalData);
+        const vevents = comp.getAllSubcomponents('vevent');
+
+        if (vevents.length > 0) {
+          bookedSet.clear();
+          vevents.forEach(vevent => {
+            const event = new ICAL.Event(vevent);
+            let start = event.startDate.toJSDate();
+            let end = event.endDate.toJSDate();
+
+            let cur = new Date(start);
+            while (cur < end) {
+              bookedSet.add(formatISODate(cur));
+              cur.setDate(cur.getDate() + 1);
+            }
+          });
+          renderCalendar();
+          document.getElementById('sync-badge').innerText = "🟢 ซิงค์ปฏิทินสดเรียบร้อย";
+        }
+      } catch (err) {
+        console.warn("Sync error:", err);
+      }
+    }
+
+    syncCalendarData();
+
+    liff.init({ liffId: MY_LIFF_ID }).catch(err => console.log(err));
+
+    document.getElementById('btn-submit').addEventListener('click', async () => {
+      if (!checkInStr || !checkOutStr) return;
+      const guests = document.getElementById('guest-count').value;
+
+      const msg1 = `สนใจจองที่พัก: PP Lake Pool Villa\n🗓 วันที่: ${checkInStr} - ${checkOutStr} (${totalNights} คืน)\n⏰ เช็คอิน: 14:00 น. | เช็คเอาท์: 11:00 น.\n👥 จำนวนผู้เข้าพัก: ${guests}`;
+      const msg2 = `ขอเลขบัญชีโอนมัดจำ/Payment`;
+
+      if (liff.isLoggedIn() && liff.isInClient()) {
+        try {
+          await liff.sendMessages([
+            { type: 'text', text: msg1 },
+            { type: 'text', text: msg2 }
+          ]);
+          liff.closeWindow();
+        } catch (e) {
+          alert("ไม่สามารถส่งข้อความได้: " + e.message);
+        }
+      } else {
+        alert("กรุณาเปิดลิงก์นี้ผ่าน LINE / Please open via LINE");
+      }
+    });
+  </script>
+</body>
+</html>
